@@ -1,5 +1,18 @@
 spring:
   application:
     name: order-service
-  config:
-    import: optional:configserver:http://localhost:8080
+#  config:
+#    import: optional:configserver:http://localhost:8080
+
+  datasource:
+    username: postgres
+    url: jdbc:postgresql://localhost:5432/order_service
+    password: postgres
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: 'true'
+    hibernate:
+      ddl-auto: update
+    show-sql: 'true'
