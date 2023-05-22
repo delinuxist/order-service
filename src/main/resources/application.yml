@@ -7,7 +7,7 @@ spring:
   datasource:
     username: postgres
     url: jdbc:postgresql://localhost:5432/order_service
-    password: postgres
+    password: 12345
   jpa:
     properties:
       hibernate:
@@ -16,3 +16,6 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: 'true'
+
+server:
+  port: 9090
