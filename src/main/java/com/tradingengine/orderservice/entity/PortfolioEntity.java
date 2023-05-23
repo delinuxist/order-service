@@ -12,10 +12,8 @@ import lombok.*;
 @Builder
 public class PortfolioEntity {
     @Id
-    @GeneratedValue(
-            strategy = GenerationType.IDENTITY
-    )
-    private Long portfolioId;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long portfolio_id;
     private String name;
-    private  Long clientId;
+    private Long client_id;
 }

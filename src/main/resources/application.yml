@@ -17,5 +17,9 @@ spring:
       ddl-auto: update
     show-sql: 'true'
 
+exchange:
+  one: https://exchange.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+  two: https://exchange2.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+
 server:
   port: 9090
