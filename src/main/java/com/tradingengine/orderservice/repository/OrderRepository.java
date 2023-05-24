@@ -8,4 +8,6 @@ import java.util.UUID;
 
 @Repository
 public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
+//    void delete(OrderEntity entity);
 }
+

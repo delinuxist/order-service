@@ -1,6 +1,8 @@
 package com.tradingengine.orderservice.entity;
 
+import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderStatus;
+import com.tradingengine.orderservice.enums.OrderType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,13 +20,13 @@ import java.util.UUID;
 @Builder
 public class OrderEntity {
     @Id
-    private UUID order_id;
+    private UUID orderId;
     private String product;
     private Double price;
     private Integer quantity;
-    private Long client_id;
-    private String side;
-    private String type;
+    private Long clientId;
+    private OrderSide side;
+    private OrderType type;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private OrderStatus status;

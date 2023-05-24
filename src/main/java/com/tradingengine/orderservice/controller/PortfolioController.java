@@ -1,9 +1,9 @@
 package com.tradingengine.orderservice.controller;
 
-import com.tradingengine.orderservice.dto.PorfolioRequestDto;
+import com.tradingengine.orderservice.dto.PortfolioRequestDto;
 import com.tradingengine.orderservice.entity.PortfolioEntity;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
-import com.tradingengine.orderservice.service.PortfolioService;
+import com.tradingengine.orderservice.service.impl.PortfolioServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -15,26 +15,26 @@ import java.util.List;
 @RequestMapping(path = "/api/order/portfolio")
 public class PortfolioController {
 
-    private final PortfolioService portfolioService;
+    private final PortfolioServiceImpl portfolioServiceImpl;
 
-    PortfolioController(PortfolioService portfolioService) {
-        this.portfolioService = portfolioService;
+    PortfolioController(PortfolioServiceImpl portfolioServiceImpl) {
+        this.portfolioServiceImpl = portfolioServiceImpl;
     }
 
     // create portfolio
     @PostMapping
     public ResponseEntity<PortfolioEntity> createPortfolio(
             @RequestBody
-            @Validated PorfolioRequestDto porfolioRequestDto) {
+            @Validated PortfolioRequestDto portfolioRequestDto) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(portfolioService.createPorfolio(porfolioRequestDto));
+                .body(portfolioServiceImpl.createPortfolio(portfolioRequestDto));
     }
 
     // fetch all porfolios
     @GetMapping
     public ResponseEntity<List<PortfolioEntity>> fetchAllPortfolios() {
-        return ResponseEntity.ok(portfolioService.fetchAllPorfolios());
+        return ResponseEntity.ok(portfolioServiceImpl.fetchAllPortfolios());
     }
 
     // fetch portfolio by portfolioId
@@ -45,7 +45,7 @@ public class PortfolioController {
     ) throws PortfolioNotFoundException {
         return ResponseEntity
                 .ok()
-                .body(portfolioService.fetchPortfolioById(portfolioId));
+                .body(portfolioServiceImpl.fetchPortfolioById(portfolioId));
     }
 
     // update portfolio
@@ -53,12 +53,12 @@ public class PortfolioController {
     public ResponseEntity<PortfolioEntity> updatePortfolio(
             @PathVariable("portfolioId")
             Long portfolioId,
-            @RequestBody @Validated PorfolioRequestDto porfolioRequestDto
+            @RequestBody @Validated PortfolioRequestDto portfolioRequestDto
     ) throws PortfolioNotFoundException {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(
-                        portfolioService.updatePortfolio(portfolioId,porfolioRequestDto)
+                        portfolioServiceImpl.updatePortfolio(portfolioId, portfolioRequestDto)
                 );
     }
 
@@ -69,6 +69,6 @@ public class PortfolioController {
             @PathVariable("portfolioId")
             Long portfolioId
     ) throws PortfolioNotFoundException {
-        portfolioService.deletePortfolio(portfolioId);
+        portfolioServiceImpl.deletePortfolio(portfolioId);
     }
 }

@@ -2,20 +2,19 @@ package com.tradingengine.orderservice.dto;
 
 import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderType;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 
-public record OrderRequestDto(
-        @NotNull
+import java.util.List;
+import java.util.UUID;
+
+public record OrderStatusResponseDto(
         String product,
-        @NotNull
-        @Min(value = 1)
         Integer quantity,
-        @NotNull
         Double price,
-        @NotNull
+        UUID orderID,
         OrderSide side,
-        @NotNull
-        OrderType type
+        OrderType orderType,
+        List<Executions> executions,
+        Integer cumulatitiveQuantity,
+        Double cumulatitivePrice
 ) {
 }
