@@ -1,6 +1,9 @@
 package com.tradingengine.orderservice.exception;
 
+import feign.FeignException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,5 +26,15 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
         return errors;
+    }
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<ErrorMessage> handleFeignStatusException(FeignException e, HttpServletResponse response) {
+        response.setStatus(e.status());
+        ErrorMessage error = ErrorMessage.builder()
+                .status(HttpStatus.BAD_REQUEST)
+                .message(e.getMessage().split(":")[8].split(",")[0])
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 }

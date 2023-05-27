@@ -7,15 +7,12 @@ import com.tradingengine.orderservice.entity.PortfolioEntity;
 import com.tradingengine.orderservice.enums.OrderStatus;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
+import com.tradingengine.orderservice.external.service.ExchangeService;
 import com.tradingengine.orderservice.repository.OrderRepository;
 import com.tradingengine.orderservice.repository.PortfolioRepository;
 import com.tradingengine.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 
 import java.time.LocalDateTime;
@@ -27,23 +24,15 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
-    @Value("${exchange.one}/order")
-    private String exchange1;
-
-    private final RestTemplate restTemplate;
-
     private final OrderRepository orderRepository;
 
     private final PortfolioRepository portfolioRepository;
 
+    private final ExchangeService exchangeService;
+
     public OrderEntity placeOrder(Long portfolioId, OrderRequestDto orderRequestDto) throws PortfolioNotFoundException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
 
-        //request body entity
-        HttpEntity<OrderRequestDto> entity = new HttpEntity<>(orderRequestDto,headers);
-
-         UUID orderId =  restTemplate.exchange(exchange1,HttpMethod.POST,entity,UUID.class).getBody();
+         UUID orderId =  exchangeService.placeOrder(orderRequestDto);
 
          Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
 
@@ -70,21 +59,21 @@ public class OrderServiceImpl implements OrderService {
 
 
     public OrderStatusResponseDto checkOrderStatus(UUID orderID) throws OrderNotFoundException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<OrderStatusResponseDto> entity = new HttpEntity<>(headers);
-
         Optional<OrderEntity> order = orderRepository.findById(orderID);
         if(order.isEmpty()){
             throw new OrderNotFoundException(orderID);
         }
-        return restTemplate.exchange(exchange1 + "/" + orderID,HttpMethod.GET, entity, OrderStatusResponseDto.class).getBody();
+        return exchangeService.checkStatus(orderID);
     }
 
 
-    public Optional<OrderEntity> getOrder(UUID orderID) {
-        return orderRepository.findById(orderID);
+    public OrderEntity getOrderById(UUID orderId) throws OrderNotFoundException {
+        Optional<OrderEntity> order = orderRepository.findById(orderId);
+        if(order.isEmpty()) {
+            throw new OrderNotFoundException(orderId);
+        }
+
+        return order.get();
     }
 
 
@@ -93,50 +82,51 @@ public class OrderServiceImpl implements OrderService {
     }
 
 
-    public String cancelOrder(UUID orderId) throws OrderNotFoundException {
+    public Boolean cancelOrder(UUID orderId) throws OrderNotFoundException {
 
         Optional<OrderEntity> order = orderRepository.findById(orderId);
-        if(order.isEmpty()){
+
+        if (order.isEmpty()) {
             throw new OrderNotFoundException(orderId);
         }
 
-        Boolean result = restTemplate.exchange(exchange1 +"/"+ order.get().getOrderId(), HttpMethod.DELETE, null, Boolean.class).getBody();
+        Boolean result = exchangeService.cancelOrder(orderId);
+        System.out.println(result);
 
-        if (Boolean.TRUE.equals(result)){
-            OrderEntity cancelledOrder = order.get();
-            cancelledOrder.setStatus(OrderStatus.CANCELLED);
-            cancelledOrder.setUpdatedAt(LocalDateTime.now());
-            orderRepository.save(cancelledOrder);
-            return "order with order id " + orderId + " has been cancelled!";
+        if (result) {
+            order.get().setStatus(OrderStatus.CANCELLED);
+            order.get().setUpdatedAt(LocalDateTime.now());
+            orderRepository.save(order.get());
         }
-        return "order could not be  cancelled";
+        return result;
     }
 
 
-    public String modifyOrder(UUID orderId, OrderRequestDto orderRequestDto) throws OrderNotFoundException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
-
-        HttpEntity<OrderRequestDto> entity = new HttpEntity<>(orderRequestDto, headers);
+    public Boolean modifyOrder(UUID orderId, OrderRequestDto orderRequestDto) throws OrderNotFoundException {
 
         Optional<OrderEntity> order = orderRepository.findById(orderId);
 
-        if(order.isEmpty()){
+        if (order.isEmpty()) {
             throw new OrderNotFoundException(orderId);
         }
-        else if ( !(order.get().getProduct().equals(orderRequestDto.product())) ) {
-            return "Product must be same as original";
-        } else if( !(order.get().getSide().equals(orderRequestDto.side())) ) {
-            return "Order must be same as original";
-        } else {
-            Boolean result = restTemplate.exchange(exchange1 + "/" + order.get().getOrderId(), HttpMethod.PUT, entity, Boolean.class).getBody();
-            if(result.equals(true)) {
-                order.get().setPrice(orderRequestDto.price());
-                order.get().setQuantity(orderRequestDto.quantity());
-                return "Order updated successfully";
 
-            }
+        if (!order.get().getProduct().equals(orderRequestDto.product()) &&
+                !order.get().getSide().equals(orderRequestDto.side()) &&
+                !order.get().getType().equals(orderRequestDto.type())) {
+            // throw an exception
+            System.out.println();
         }
-        return "Order cannot be updated";
+
+        return exchangeService.modifyOrder(orderId, orderRequestDto);
+    }
+
+    @Override
+    public List<OrderEntity> fetchPendingOrders() {
+        return orderRepository.findPendingOrders();
+    }
+
+    @Override
+    public void updateOrderStatus(OrderEntity order) {
+        orderRepository.save(order);
     }
 }

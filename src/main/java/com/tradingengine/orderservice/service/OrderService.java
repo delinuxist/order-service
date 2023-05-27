@@ -11,13 +11,19 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface OrderService {
-    public OrderEntity placeOrder(Long portfolioId, OrderRequestDto orderRequestDto) throws PortfolioNotFoundException;
+    OrderEntity placeOrder(Long portfolioId, OrderRequestDto orderRequestDto) throws PortfolioNotFoundException;
 
-    public OrderStatusResponseDto checkOrderStatus(UUID orderID) throws OrderNotFoundException;
+    OrderStatusResponseDto checkOrderStatus(UUID orderID) throws OrderNotFoundException;
 
-    public Optional<OrderEntity> getOrder(UUID orderID);
+    OrderEntity getOrderById(UUID orderID) throws OrderNotFoundException;
 
-    public List<OrderEntity> getAllOrders();
+    List<OrderEntity> getAllOrders();
 
-    public String cancelOrder(UUID order_id) throws OrderNotFoundException;
+    Boolean cancelOrder(UUID order_id) throws OrderNotFoundException;
+
+    Boolean modifyOrder(UUID orderId, OrderRequestDto orderRequestDto) throws OrderNotFoundException;
+
+    List<OrderEntity> fetchPendingOrders();
+
+    void updateOrderStatus(OrderEntity order);
 }

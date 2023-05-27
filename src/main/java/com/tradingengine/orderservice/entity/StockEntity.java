@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "stock")
+@Table(name = "stocks")
 @Setter
 @Getter
 @ToString
@@ -19,9 +19,7 @@ public class StockEntity {
     private Integer quantity;
     private Double price;
 
-    @ManyToOne(cascade = CascadeType.ALL, optional = false)
-    @JoinColumn(name = "portfolio_id", referencedColumnName = "portfolio_id")
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "portfolio_id", referencedColumnName = "portfolioId")
     private PortfolioEntity portfolio;
-
-
 }

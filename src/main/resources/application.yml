@@ -6,8 +6,8 @@ spring:
 
   datasource:
     username: postgres
-    url: jdbc:postgresql://localhost:5432/postgres
-    password: 12345
+    url: jdbc:postgresql://localhost:5432/order_service
+    password: postgres
   jpa:
     properties:
       hibernate:
@@ -21,5 +21,5 @@ exchange:
   one: https://exchange.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
   two: https://exchange2.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
 
-server:
-  port: 9090
+#server:
+#  port: 9090
