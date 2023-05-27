@@ -27,6 +27,7 @@ public class OrderEntity {
     private Long clientId;
     private OrderSide side;
     private OrderType type;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private OrderStatus status;
@@ -37,7 +38,7 @@ public class OrderEntity {
     )
     @JoinColumn(
             name = "portfolio_id",
-            referencedColumnName = "portfolio_id"
+            referencedColumnName = "portfolioId"
     )
     private PortfolioEntity portfolio;
 

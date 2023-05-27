@@ -21,4 +21,15 @@ public class PortfolioExceptionHandler extends ResponseEntityExceptionHandler {
                     .build();
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
         }
+
+    @ExceptionHandler(PortfolioDeletionFailedException.class)
+    public ResponseEntity<ErrorMessage> portfolioDeletionFailedFoundException(
+            PortfolioDeletionFailedException exception
+    ){
+        ErrorMessage message = ErrorMessage.builder()
+                .status(HttpStatus.NOT_FOUND)
+                .message(exception.getMessage())
+                .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+    }
 }
