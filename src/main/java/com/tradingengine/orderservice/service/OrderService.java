@@ -7,11 +7,10 @@ import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 public interface OrderService {
-    OrderEntity placeOrder(Long portfolioId, OrderRequestDto orderRequestDto) throws PortfolioNotFoundException;
+    OrderEntity placeOrder(UUID portfolioId, OrderRequestDto orderRequestDto) throws PortfolioNotFoundException;
 
     OrderStatusResponseDto checkOrderStatus(UUID orderID) throws OrderNotFoundException;
 
@@ -26,4 +25,11 @@ public interface OrderService {
     List<OrderEntity> fetchPendingOrders();
 
     void updateOrderStatus(OrderEntity order);
+
+    Boolean validateOrder(UUID portfolioId, OrderRequestDto orderRequestDto, UUID userId);
+
+    String executeOrder(OrderRequestDto order, String exchangeUrl);
+    // after making necessary checks and validation we submit it based on the exchange type.
+
+
 }

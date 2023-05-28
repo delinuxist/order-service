@@ -8,9 +8,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface StockRepository extends JpaRepository<StockEntity,Long> {
 
     Optional<StockEntity> findStockEntitiesByPortfolioAndTicker(PortfolioEntity portfolio, String ticker);
+    Optional<StockEntity> findStockEntityByPortfolio_ClientIdAndTicker(UUID portfolioId, String ticker);
+
+
 }

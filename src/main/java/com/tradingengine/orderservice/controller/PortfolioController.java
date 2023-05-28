@@ -12,6 +12,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(path = "/api/order/portfolio")
@@ -42,7 +43,7 @@ public class PortfolioController {
     @GetMapping("/{portfolioId}")
     public ResponseEntity<PortfolioEntity> fetchPortfolioById(
             @PathVariable("portfolioId")
-            Long portfolioId
+            UUID portfolioId
     ) throws PortfolioNotFoundException {
         return ResponseEntity
                 .ok()
@@ -53,7 +54,7 @@ public class PortfolioController {
     @PatchMapping("/{portfolioId}")
     public ResponseEntity<PortfolioEntity> updatePortfolio(
             @PathVariable("portfolioId")
-            Long portfolioId,
+            UUID portfolioId,
             @RequestBody @Validated PortfolioRequestDto portfolioRequestDto
     ) throws PortfolioNotFoundException {
         return ResponseEntity
@@ -68,7 +69,7 @@ public class PortfolioController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletePortfolio(
             @PathVariable("portfolioId")
-            Long portfolioId
+            UUID portfolioId
     ) throws PortfolioNotFoundException, PortfolioDeletionFailedException {
         portfolioService.deletePortfolio(portfolioId);
     }

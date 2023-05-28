@@ -23,7 +23,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/{portfolioId}")
-    public OrderEntity createOrder(@PathVariable("portfolioId") Long portfolioId,
+    public OrderEntity createOrder(@PathVariable("portfolioId") UUID portfolioId,
                                    @Validated @RequestBody OrderRequestDto orderRequestDto) throws PortfolioNotFoundException {
         return orderService.placeOrder(portfolioId,orderRequestDto);
     }

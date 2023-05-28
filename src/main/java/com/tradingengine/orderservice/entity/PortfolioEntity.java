@@ -3,6 +3,8 @@ package com.tradingengine.orderservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Entity
 @Setter
 @Getter
@@ -14,7 +16,7 @@ import lombok.*;
 public class PortfolioEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long portfolioId;
+    private UUID portfolioId;
     private String name;
-    private Long clientId;
+    private UUID clientId;
 }
