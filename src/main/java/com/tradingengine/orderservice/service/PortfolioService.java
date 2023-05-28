@@ -6,6 +6,8 @@ import com.tradingengine.orderservice.exception.portfolio.PortfolioDeletionFaile
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface PortfolioService {
 
@@ -13,10 +15,11 @@ public interface PortfolioService {
 
     List<PortfolioEntity> fetchAllPortfolios();
 
-    PortfolioEntity fetchPortfolioById(Long portfolioId) throws PortfolioNotFoundException;
+    PortfolioEntity fetchPortfolioById(UUID portfolioId) throws PortfolioNotFoundException;
 
-    PortfolioEntity updatePortfolio(Long portfolioId,PortfolioRequestDto portfolioRequestDto) throws PortfolioNotFoundException;
+    PortfolioEntity updatePortfolio(UUID portfolioId,PortfolioRequestDto portfolioRequestDto) throws PortfolioNotFoundException;
 
-    void deletePortfolio(Long portfolioId) throws PortfolioNotFoundException, PortfolioDeletionFailedException;
+    void deletePortfolio(UUID portfolioId) throws PortfolioNotFoundException, PortfolioDeletionFailedException;
 
+    PortfolioEntity getPortfolioById(UUID portfolioId) throws PortfolioNotFoundException;
 }

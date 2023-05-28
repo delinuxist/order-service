@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +29,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         return portfolioRepository.findAll();
     }
 
-    public PortfolioEntity fetchPortfolioById(Long portfolioId) throws PortfolioNotFoundException {
+    public PortfolioEntity fetchPortfolioById(UUID portfolioId) throws PortfolioNotFoundException {
         Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
         if (portfolio.isEmpty()) {
             throw new PortfolioNotFoundException(portfolioId);
@@ -37,7 +38,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     public PortfolioEntity updatePortfolio(
-            Long portfolioId,
+            UUID portfolioId,
             PortfolioRequestDto portfolioRequestDto
     ) throws PortfolioNotFoundException {
         Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
@@ -49,7 +50,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     }
 
     public void deletePortfolio(
-            Long portfolioId
+            UUID portfolioId
     ) throws PortfolioNotFoundException {
        Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
 
@@ -61,7 +62,11 @@ public class PortfolioServiceImpl implements PortfolioService {
         portfolioRepository.deleteById(portfolioId);
     }
 
-
+    @Override
+    public PortfolioEntity getPortfolioById(UUID portfolioId) throws PortfolioNotFoundException {
+        return portfolioRepository.findById(portfolioId)
+                .orElseThrow(() -> new PortfolioNotFoundException(portfolioId));
+    }
 }
 
 

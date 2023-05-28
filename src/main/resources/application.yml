@@ -5,9 +5,9 @@ spring:
 #    import: optional:configserver:http://localhost:8080
 
   datasource:
-    username: postgres
-    url: jdbc:postgresql://localhost:5432/order_service
-    password: postgres
+    username: rozz
+    url: jdbc:postgresql://localhost:5332/marketdb
+    password: password
   jpa:
     properties:
       hibernate:
