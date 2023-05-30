@@ -4,13 +4,13 @@ import lombok.*;
 
 
 public record ProductInfo(
-     String TICKER,
-     int SELL_LIMIT,
-     double  LAST_TRADED_PRICE,
-     double MAX_PRICE_SHIFT,
-     double ASK_PRICE,
-     double BID_PRICE,
-     int BUY_LIMIT
+     String ticker,
+     int sellLimit,
+     double  lastTradedPrice,
+     double maxPriceShift,
+     double askPrice,
+     double bidPrice,
+     int buyLimit
 ){}
 
 //public class ProductInfo {

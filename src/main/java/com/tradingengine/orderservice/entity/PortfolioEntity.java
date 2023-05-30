@@ -15,8 +15,9 @@ import java.util.UUID;
 @Builder
 public class PortfolioEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
     private UUID portfolioId;
     private String name;
+    @GeneratedValue
     private UUID clientId;
 }
