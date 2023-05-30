@@ -5,8 +5,8 @@ spring:
 #    import: optional:configserver:http://localhost:8080
 
   datasource:
-    username: rozz
-    url: jdbc:postgresql://localhost:5332/marketdb
+    username: postgres
+    url: jdbc:postgresql://localhost:5332/orderdb
     password: password
   jpa:
     properties:
@@ -17,9 +17,19 @@ spring:
       ddl-auto: update
     show-sql: 'true'
 
+#  elasticsearch:
+#    uris: https://localhost:8080
+#    password:
+
 exchange:
   one: https://exchange.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
   two: https://exchange2.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+  key: 7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
 
-#server:
-#  port: 9090
+
+server:
+  port: 8080
+
+#  spring.elasticsearch.uris=
+#  spring.elasticsearch.password=
+#  spring.elasticsearch.username=

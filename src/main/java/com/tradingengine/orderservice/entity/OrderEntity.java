@@ -17,7 +17,7 @@ import java.util.UUID;
 @Builder
 public class OrderEntity {
     @Id
-    @Generated
+    @GeneratedValue
     private UUID id;
 //    Added orderId from exchange
     private UUID orderId;

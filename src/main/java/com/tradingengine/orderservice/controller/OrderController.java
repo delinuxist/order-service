@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -54,6 +55,12 @@ public class OrderController {
             @RequestBody OrderRequestDto orderRequestDto
     ) throws OrderNotFoundException {
         return orderService.modifyOrder(orderId, orderRequestDto);
+    }
+
+    @PostMapping("/{userId}/{portfolioId}")
+    public void createAnOrder(@PathVariable("portfolioId") UUID portfolioId, @PathVariable("userId") UUID userId,
+                                   @Validated @RequestBody OrderRequestDto orderRequestDto) throws Exception {
+        orderService.placeAnOrder(userId, portfolioId, orderRequestDto);
     }
 
 }

@@ -1,13 +1,14 @@
 package com.tradingengine.orderservice.marketdata.service;
 
-import com.tradingengine.orderservice.dto.OrderRequestDto;
-import com.tradingengine.orderservice.enums.OrderSide;
-import com.tradingengine.orderservice.marketdata.models.Order;
+import com.tradingengine.orderservice.marketdata.models.Product;
 import com.tradingengine.orderservice.marketdata.models.ProductInfo;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface MarketDataService {
-    List<ProductInfo> getProductByTicker(String ticker);
-    List<Order> getOrdersByTickerAndSideAndType(OrderRequestDto order);
+    Stream<ProductInfo> getProductByTicker(String ticker) throws IOException;
+    Stream<Product> findOrders(String product, String side) throws IOException;
+    Stream<Product> findOrders(String product, String side, String orderType) throws IOException;
 }

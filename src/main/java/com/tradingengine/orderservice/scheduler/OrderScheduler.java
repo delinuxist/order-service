@@ -29,6 +29,7 @@ public class OrderScheduler {
     @Scheduled(fixedRate = 30_000)
     private void updateFulfilledOrderAndCreateStock() {
         List<OrderEntity> orders = orderService.fetchPendingOrders();
+
         orders.forEach(order -> {
                     if (order.getStatus() != OrderStatus.CANCELLED) {
                         OrderStatusResponseDto orderStatus = exchangeService.checkStatus(order.getOrderId());
