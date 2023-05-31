@@ -20,6 +20,6 @@ public class Wallet {
     @GeneratedValue
     private UUID id;
     private UUID  clientId;
-    private Integer amount;
+    private double amount;
 
 }

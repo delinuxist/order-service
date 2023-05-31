@@ -26,7 +26,7 @@ public class OrderScheduler {
 
     private final ExchangeService exchangeService;
 
-    @Scheduled(fixedRate = 30_000)
+//    @Scheduled(fixedRate = 30_000)
     private void updateFulfilledOrderAndCreateStock() {
         List<OrderEntity> orders = orderService.fetchPendingOrders();
 

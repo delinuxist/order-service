@@ -30,5 +30,10 @@ public class MarketDataServiceImpl implements MarketDataService {
         return elasticSearchQuery.findOrders(product, side, orderType);
     }
 
+    @Override
+    public List<Product> findOrders(String product) throws IOException {
+       return  elasticSearchQuery.findOrders(product);
+    }
+
 
 }

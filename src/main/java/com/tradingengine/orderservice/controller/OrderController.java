@@ -5,6 +5,7 @@ import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
+import com.tradingengine.orderservice.marketdata.models.Product;
 import com.tradingengine.orderservice.service.OrderService;
 import com.tradingengine.orderservice.service.impl.OrderServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,11 @@ public class OrderController {
         return orderService.getAllOrders();
     }
 
+    @GetMapping("/trades/{product}")
+    public List<Product> getOpenTrades(@PathVariable("product") String product) throws IOException {
+        return orderService.getOpenTrades(product);
+    }
+
     @DeleteMapping("/{orderId}")
     public Boolean cancelOrder(@PathVariable("orderId") UUID orderId) throws OrderNotFoundException {
          return orderService.cancelOrder(orderId);
@@ -60,7 +66,7 @@ public class OrderController {
     @PostMapping("/{userId}/{portfolioId}")
     public void createAnOrder(@PathVariable("portfolioId") UUID portfolioId, @PathVariable("userId") UUID userId,
                                    @Validated @RequestBody OrderRequestDto orderRequestDto) throws Exception {
-        orderService.placeAnOrder(userId, portfolioId, orderRequestDto);
+        orderService.TryAnOrder(userId, portfolioId, orderRequestDto);
     }
 
 }

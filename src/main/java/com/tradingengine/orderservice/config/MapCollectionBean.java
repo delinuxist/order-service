@@ -18,7 +18,7 @@ public class MapCollectionBean {
         map.put("AAPL", "apple");
         map.put("TSLA", "tesla");
         map.put("IBM", "ibm");
-        map.put("ORCL", "orcl");
+        map.put("ORCL", "oracle");
         map.put("AMZN", "amazon");
         return map;
     }
