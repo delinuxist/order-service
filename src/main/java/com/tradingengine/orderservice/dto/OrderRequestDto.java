@@ -4,18 +4,22 @@ import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
 
-public record OrderRequestDto(
+@Setter
+@Getter
+public class OrderRequestDto{
         @NotNull
-        String product,
+       private String product;
         @NotNull
         @Min(value = 1)
-        Integer quantity,
+       private Integer quantity;
         @NotNull
-        Double price,
+       private Double price;
         @NotNull
-        OrderSide side,
+       private OrderSide side;
         @NotNull
-        OrderType type
-) {
+       private OrderType type;
 }
+

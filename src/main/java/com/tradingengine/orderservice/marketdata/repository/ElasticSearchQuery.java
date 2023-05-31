@@ -36,14 +36,21 @@ public class ElasticSearchQuery {
     private ElasticsearchClient elasticsearchClient;
 
 
+    public List<Product> findOrders(String product) throws  IOException {
+        SearchRequest searchRequest = SearchRequest.of(s -> s
+                .index(getIndexByTicker(product)));
+        SearchResponse<Product> search = elasticsearchClient.search(searchRequest, Product.class);
+        return  search.hits().hits().stream().map(Hit::source).toList();
+    }
+
     public Stream<Product> findOrders(String product, String side) throws  IOException {
         SearchRequest searchRequest = SearchRequest.of(s -> s
                 .index(getIndexByTicker(product))
                 .query(q -> q
                         .bool(b -> b
                                 .must(m -> m.match(t -> t.field("side").query(side))
-                        )
-                )));
+                                )
+                        )));
         SearchResponse<Product> search = elasticsearchClient.search(searchRequest, Product.class);
         return  search.hits().hits().stream().map(Hit::source);
     }

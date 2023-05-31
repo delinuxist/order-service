@@ -30,6 +30,3 @@ exchange:
 server:
   port: 8080
 
-#  spring.elasticsearch.uris=
-#  spring.elasticsearch.password=
-#  spring.elasticsearch.username=
