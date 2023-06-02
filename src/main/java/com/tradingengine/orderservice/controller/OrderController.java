@@ -66,7 +66,7 @@ public class OrderController {
     @PostMapping("/{userId}/{portfolioId}")
     public void createAnOrder(@PathVariable("portfolioId") UUID portfolioId, @PathVariable("userId") UUID userId,
                                    @Validated @RequestBody OrderRequestDto orderRequestDto) throws Exception {
-        orderService.TryAnOrder(userId, portfolioId, orderRequestDto);
+        orderService.makeAnOrder(userId, portfolioId, orderRequestDto);
     }
 
 }

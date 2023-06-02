@@ -29,15 +29,12 @@ public interface OrderService {
 
     void updateOrderStatus(OrderEntity order);
 
-    Boolean validateOrder(UUID portfolioId, OrderRequestDto orderRequestDto, UUID userId) throws IOException, BuyLimitExceededException, InsufficientBalanceException, BuyOrderPriceCannotBeMatched, SellLimitExceededException, StockNotAvailable, SellOrderPriceCannotBeMatched, BuyOrderPriceNotReasonable;
+    void executeOrder(OrderRequestDto order, String exchangeUrl, UUID portfolioId, UUID userId) throws PortfolioNotFoundException;
 
-    void executeOrder(OrderRequestDto order, String exchangeUrl);
-
-    void TryAnOrder(UUID userId, UUID portfolioId, OrderRequestDto order) throws Exception;
+    void makeAnOrder(UUID userId, UUID portfolioId, OrderRequestDto order) throws Exception;
     // after making necessary checks and validation we submit it based on the exchange type.
 
     List<Product> getOpenTrades(String product) throws IOException;
-
 
 
 

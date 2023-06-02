@@ -33,6 +33,8 @@ public class OrderEntity {
     private LocalDateTime updatedAt;
     private OrderStatus status;
 
+    private String legId;
+
     @ManyToOne(
             cascade = CascadeType.ALL,
             optional = false

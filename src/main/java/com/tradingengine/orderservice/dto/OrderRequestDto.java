@@ -15,11 +15,13 @@ public class OrderRequestDto{
         @NotNull
         @Min(value = 1)
        private Integer quantity;
-        @NotNull
+
        private Double price;
         @NotNull
        private OrderSide side;
         @NotNull
        private OrderType type;
+
+        private String legId;
 }
 

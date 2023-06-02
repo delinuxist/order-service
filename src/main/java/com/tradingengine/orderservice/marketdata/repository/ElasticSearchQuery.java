@@ -44,25 +44,30 @@ public class ElasticSearchQuery {
     }
 
     public Stream<Product> findOrders(String product, String side) throws  IOException {
+        System.out.println("Side is  " + side);
+        System.out.println("Product is  " + product);
+        System.out.println("Product name on Elasticsearch is  " + getIndexByTicker(product));
         SearchRequest searchRequest = SearchRequest.of(s -> s
                 .index(getIndexByTicker(product))
                 .query(q -> q
                         .bool(b -> b
-                                .must(m -> m.match(t -> t.field("side").query(side))
-                                )
+                                .must(m -> m.match(t -> t.field("side").query(side)))
                         )));
         SearchResponse<Product> search = elasticsearchClient.search(searchRequest, Product.class);
         return  search.hits().hits().stream().map(Hit::source);
     }
 
     public Stream<Product> findOrders(String product, String side, String orderType) throws IOException {
+        System.out.println("Side is  " + side);
+        System.out.println("Product is  " + product);
+        System.out.println("Product name on Elasticsearch is  " + getIndexByTicker(product));
         SearchRequest searchRequest = SearchRequest.of(s -> s
                 .index(getIndexByTicker(product))
                 .query(q -> q
                         .bool(b -> b
                                 .must(m -> m.match(t -> t.field("side").query(side))
-                                ).must(m -> m.match(t -> t.field("orderType").query(orderType)))
-                        )));
+                                ).must(m -> m.match(t -> t.field("orderType").query(orderType))
+                        ))));
         SearchResponse<Product> search = elasticsearchClient.search(searchRequest, Product.class);
         return search.hits().hits().stream().map(Hit::source);
     }
