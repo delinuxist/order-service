@@ -13,8 +13,8 @@ import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
 import com.tradingengine.orderservice.exception.verification.*;
 import com.tradingengine.orderservice.external.service.ExchangeService;
-import com.tradingengine.orderservice.marketdata.models.Product;
-import com.tradingengine.orderservice.marketdata.models.ProductInfo;
+import com.tradingengine.orderservice.marketdata.models.Trade;
+import com.tradingengine.orderservice.marketdata.models.TradeInfo;
 import com.tradingengine.orderservice.marketdata.service.MarketDataService;
 import com.tradingengine.orderservice.repository.OrderRepository;
 import com.tradingengine.orderservice.repository.PortfolioRepository;
@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 
@@ -184,15 +185,17 @@ public class OrderServiceImpl implements OrderService{
     }
 
     @Override
-    public List<Product> getOpenTrades(String product) throws IOException {
-        return marketDataService.findOrders(product);
+    public List<Trade> getOpenTrades(String product) throws IOException {
+        return marketDataService.findOpenTrades(product);
     }
 
     private boolean isQuotedPriceValid(OrderRequestDto order) throws  IOException, BuyOrderPriceNotReasonable {
         log.info("Checking whether your bid price is valid! Not too low or high");
-        Stream<ProductInfo> products =  marketDataService.getProductByTicker(order.getProduct());
-        boolean isQuotedPriceValid = products.anyMatch(product -> order.getPrice() >= product.bidPrice() - product.maxPriceShift()
-                || order.getPrice() <= product.bidPrice() + product.maxPriceShift());
+        Stream<TradeInfo> products =  marketDataService.getProductByTicker(order.getProduct());
+        // make sure client's price is greater than the minimum bid price ie bidPrice-maxPriceShift
+        // make sure client's price is less than the maximum bid price ie bidPrice + maxPriceShift
+        boolean isQuotedPriceValid = products.anyMatch(product -> order.getPrice() >=  product.bidPrice() - product.maxPriceShift()
+                && order.getPrice() <= product.bidPrice() + product.maxPriceShift());
         if (isQuotedPriceValid) {
             log.info("Your BUY price is Reasonable and can be matched on Exchange");
             return true;
@@ -204,6 +207,7 @@ public class OrderServiceImpl implements OrderService{
 
     private boolean isWalletAmountSufficient(OrderRequestDto order, UUID userId) throws InsufficientBalanceException {
         log.info("Checking whether Wallet Balance is sufficient");
+        // check if yor wallet balance can match your bidPrice walletAccount >= Order.Price
         boolean isClientWalletSufficient = walletService.getWalletByUserId(userId)
                 .stream().anyMatch(wallet -> wallet.getAmount() >= order.getPrice());
         if (isClientWalletSufficient) {
@@ -215,11 +219,12 @@ public class OrderServiceImpl implements OrderService{
 
     private Boolean isBuyQuantityValid(OrderRequestDto order) throws IOException, BuyLimitExceededException {
         log.info("Validating Buy Limit Order against the current Market Data BuyLimit!");
-        Stream<ProductInfo> products =  marketDataService.getProductByTicker(order.getProduct());
+        Stream<TradeInfo> products =  marketDataService.getProductByTicker(order.getProduct());
         log.info("Current Market Buy Limit");
-        boolean verified = products.anyMatch(productInfo -> productInfo.buyLimit() >= order.getQuantity());
+        // check if the quantity you want to buy is available
+        boolean verified = products.anyMatch(tradeInfo -> tradeInfo.buyLimit() >= order.getQuantity());
         if (verified) {
-            log.info("The quantity you want to buy is valid and possible");
+            log.info("The quantity you want to buy is valid and  may likely be possible");
             return true;
         };
         log.info("Yor Buy quantity can't be matched");
@@ -229,7 +234,7 @@ public class OrderServiceImpl implements OrderService{
     public boolean validateBuyOrderWithLimit(OrderRequestDto order, UUID userId) throws IOException,
             InsufficientBalanceException, BuyOrderPriceNotReasonable, BuyLimitExceededException {
         log.info("Validating a BUY order with LIMIT");
-        Stream<ProductInfo> products =  marketDataService.getProductByTicker(order.getProduct());
+        Stream<TradeInfo> products =  marketDataService.getProductByTicker(order.getProduct());
         log.info("Current Market data for {}", order.getProduct());
         products.forEach(System.out::println);
         return isQuotedPriceValid(order) && isWalletAmountSufficient(order, userId) && isBuyQuantityValid(order);
@@ -242,7 +247,7 @@ public class OrderServiceImpl implements OrderService{
     }
 
 
-    // Doing market Buy Order we execute based on askPrices on the exchange
+
     // No price validation
     public boolean isWalletBalanceSufficientForMarketOrder(OrderRequestDto order, UUID userId) throws IOException, BuyOrderPriceCannotBeMatched, NoWalletFound {
         Optional<Wallet> userWallet = getWalletBalance(userId);
@@ -253,7 +258,7 @@ public class OrderServiceImpl implements OrderService{
             order.setPrice(walletBalance);
             log.info("Market data based on Product Ticker");
             marketDataService.getProductByTicker(order.getProduct()).forEach(System.out::println);
-            Stream<ProductInfo> products =  marketDataService.getProductByTicker(order.getProduct());
+            Stream<TradeInfo> products =  marketDataService.getProductByTicker(order.getProduct());
             boolean isQuotedPriceValid = products.anyMatch(product -> order.getPrice() >= product.bidPrice() - product.maxPriceShift());
             if (isQuotedPriceValid) {
                 log.info("Your MARKET order has chance of being fulfilled, Account Balance is sufficient for {} Stock", order.getProduct());
@@ -270,33 +275,69 @@ public class OrderServiceImpl implements OrderService{
     public boolean validateBuyOrderWithMarket(OrderRequestDto order, UUID userId) throws IOException, BuyOrderPriceCannotBeMatched, BuyLimitExceededException, NoWalletFound {
         // Check the quantity is available and check the wallet has sufficient amount
         log.info("Validating a BUY order with MARKET");
-        Stream<ProductInfo> products =  marketDataService.getProductByTicker(order.getProduct());
+        Stream<TradeInfo> products =  marketDataService.getProductByTicker(order.getProduct());
         log.info("Current Market data for {}", order.getProduct());
         products.forEach(System.out::println);
         return  isBuyQuantityValid(order) && isWalletBalanceSufficientForMarketOrder(order, userId);
     }
 
 
-    public void makeLimitBuyOrder(OrderRequestDto order, UUID userId) throws IOException, BuyLimitExceededException, BuyOrderPriceNotReasonable, InsufficientBalanceException {
-        if (validateBuyOrderWithLimit(order, userId)) {
-            log.info("Getting data information");
-            System.out.println(order.getType().name());
-            marketDataService.findOrders(order.getProduct(),
-                            order.getSide().name(), order.getType().name()).forEach(System.out::println);
-            Optional<Product> marketData = marketDataService.findOrders(order.getProduct(),
-                            order.getSide().name(), order.getType().name()).
-                    filter(product -> order.getPrice() <= product.getPrice() && order.getQuantity() <= product.getQuantity())
-                    .min(Comparator.comparingInt(i -> Math.abs(i.getQuantity() - order.getQuantity())));
-            if (marketData.isPresent()) {
-                log.info("Order can be made on this exchange {}", marketData.get());
-            } else log.info("Order can't be made");
+    public void makeAnOrder(UUID  userId, UUID portfolioId, OrderRequestDto order) throws Exception {
+        log.info("Processing order for user with id {}", userId);
+        if (order.getSide() == OrderSide.BUY) {
+            if (order.getType() == OrderType.LIMIT) {
+                makeLimitBuyOrder(order, userId, portfolioId);
+            }
+            makeMarketBuyOrder(order, userId, portfolioId);
         }
+
+        if (order.getSide() == OrderSide.SELL) {
+            if (order.getType() == OrderType.LIMIT) {
+                makeSellLimitOrder(order, userId, portfolioId);
+            }
+            makeSellMarketOrder(order, userId, portfolioId);
+        }
+        makeLimitBuyOrder(order, userId, portfolioId);
+
+    }
+
+    public String makeLimitBuyOrder(OrderRequestDto order, UUID userId, UUID portfolioId) throws IOException,
+            BuyLimitExceededException, BuyOrderPriceNotReasonable, InsufficientBalanceException, PortfolioNotFoundException {
+        if (validateBuyOrderWithLimit(order, userId)) {
+            log.info("Getting Data for LIMIT ORDER,  Open Trades");
+           return performBuyTrade(order, userId, portfolioId);
+        }
+
+        return "";
     }
 
 
-    public void makeMarketBuyOrder() {
+    public String makeMarketBuyOrder(OrderRequestDto order, UUID userId, UUID portfolioId) throws BuyLimitExceededException,
+            IOException, NoWalletFound, BuyOrderPriceCannotBeMatched, BuyOrderPriceNotReasonable, InsufficientBalanceException, PortfolioNotFoundException {
+        if (validateBuyOrderWithMarket(order, userId)) {
+            log.info("Getting Data for MARKET ORDER,  Open Trades");
+            return performBuyTrade(order, userId, portfolioId);
 
+        }
+        return "";
     }
+
+
+    public String makeSellMarketOrder(OrderRequestDto order, UUID userId, UUID portfolioId) throws StockNotAvailable,
+            SellLimitExceededException, IOException {
+        if (validateSellMarketOrder(order, userId)) {
+            return performSellTrade(order, userId, portfolioId);
+        }
+        return "";
+    }
+
+    public String makeSellLimitOrder(OrderRequestDto order, UUID userId, UUID portfolioId) throws StockNotAvailable, SellLimitExceededException, IOException {
+        if (validateSellLimitOrder(order, userId)) {
+            return performSellTrade(order, userId, portfolioId);
+        }
+        return "";
+    }
+
 
 
     public  boolean validateSellMarketOrder(OrderRequestDto order, UUID userId) throws IOException, StockNotAvailable, SellLimitExceededException {
@@ -339,9 +380,9 @@ public class OrderServiceImpl implements OrderService{
     }
 
     private boolean isSellPriceLimitOrderValid(OrderRequestDto order) throws IOException {
-        Stream<ProductInfo> products =  marketDataService.getProductByTicker(order.getProduct());
+        Stream<TradeInfo> products =  marketDataService.getProductByTicker(order.getProduct());
         return products.anyMatch(product ->  order.getPrice() >= product.askPrice() - product.maxPriceShift()
-                || order.getPrice() <= product.askPrice() + product.maxPriceShift());
+                && order.getPrice() <= product.askPrice() + product.maxPriceShift());
     }
 
 
@@ -350,9 +391,9 @@ public class OrderServiceImpl implements OrderService{
 
     private Boolean validateSellLimit(OrderRequestDto order) throws IOException, SellLimitExceededException {
         log.info("Validating Sell Limit Order against the current Market Data Sell Limit!");
-        Stream<ProductInfo> products =  marketDataService.getProductByTicker(order.getProduct());
+        Stream<TradeInfo> products =  marketDataService.getProductByTicker(order.getProduct());
         log.info("Current Market Sell limit");
-        boolean verified = products.anyMatch(productInfo -> productInfo.sellLimit() >= order.getQuantity());
+        boolean verified = products.anyMatch(tradeInfo -> tradeInfo.sellLimit() >= order.getQuantity());
         if (verified) {
             log.info("Sell Quantity is valid");
             return true;
@@ -365,6 +406,9 @@ public class OrderServiceImpl implements OrderService{
 
     public void executeOrder(OrderRequestDto order, String exchangeUrl, UUID portfolioId, UUID userId) throws PortfolioNotFoundException {
         log.info("Executing the order! ********************");
+        if (order.getLegId().isEmpty()) {
+            order.setLegId(UUID.randomUUID().toString());
+        }
         log.info("Saving created order into database");
         OrderEntity orderEntity = createOrderEntity(order, portfolioId, userId);
         orderRepository.save(orderEntity);
@@ -374,92 +418,97 @@ public class OrderServiceImpl implements OrderService{
                 .body(Mono.just(order), order.getClass())
                 .retrieve()
                 .bodyToMono(String.class)
-                .doOnError(throwable -> log.info("Error occurred during executing order "))
+                .doOnError(e -> {
+                    if (e instanceof WebClientResponseException) {
+                        log.info(
+                                "Response body:    " + ((WebClientResponseException) e).getResponseBodyAsString()
+                        );
+                    }
+                })
                 .onErrorReturn("").block();
        log.info("Order Executed! You will be notified shortly, OrderID is ------>  {}", response);
     }
 
 
-    public OrderRequestDto splitMarketBuyOrder(OrderRequestDto order, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
-        log.info("Checking if order can split");
-        Optional<Product> newOrder = marketDataService.findOrders(order.getProduct(),
-                 order.getSide().name(), order.getType().name()).filter(product -> order.getPrice() <= product.getPrice() && order.getQuantity() <= product.getQuantity())
-                .min(Comparator.comparingDouble(Product::getPrice));
-                    if (newOrder.isPresent()) {
-                        // set a legid
-                        order.setLegId(UUID.randomUUID().toString());
-                        executeOrder(order, newOrder.get().getExchangeUrl(), portfolioId, userId);
-                        int quantityLeft = order.getQuantity() - newOrder.get().getQuantity();
-                        if (quantityLeft > 0) {
-                            log.info("Order Splitting successful");
-                            order.setQuantity(quantityLeft);
-                            log.info("Processing the remaining side {}", order.getQuantity());
-                            log.info("Adding remaining order to the queue");
-                            return order;
-                        }
-                    }
-//                    Add to queue to process it
-        return null;
+    public String performBuyTrade(OrderRequestDto order, UUID userId, UUID portfolioId) throws IOException, BuyLimitExceededException, BuyOrderPriceNotReasonable, InsufficientBalanceException, PortfolioNotFoundException {
+            marketDataService.findOpenTrades(order.getProduct(),
+                    OrderSide.SELL.name(), order.getType().name()).forEach(System.out::println);
+
+            // check the exchange to perform Trade on
+            List<String> tradeInfo =  marketDataService.getProductByTicker(order.getProduct()).
+                    filter(product -> order.getPrice() >=  product.bidPrice() - product.maxPriceShift()
+                            && order.getPrice() <= product.bidPrice() + product.maxPriceShift()).
+                    filter(product -> product.buyLimit() >= order.getQuantity()).map(TradeInfo::exchangeUrl).toList();
+
+            Stream<Trade> openTrades = null;
+            if (tradeInfo.size() == 2) {
+                // the two exchanges are valid so get Trades from both
+                openTrades = marketDataService.findOpenTrades(order.getProduct(),
+                        OrderSide.SELL.name(), order.getType().name());
+            } else if (tradeInfo.size() == 1) {
+                openTrades = marketDataService.findOpenTrades(order.getProduct(), OrderSide.SELL.name(),
+                        order.getType().name(), tradeInfo.get(0));
+            }
+            tradeInfo.forEach(System.out::println);
+            // since it is a limit price make sure the available orders that have at most the price the client has
+            Optional<Trade>  trade = openTrades.filter(product ->  product.getPrice() <= order.getPrice())
+                    // get the minimum price from open trades
+                    .min(Comparator.comparingDouble(Trade::getPrice));
+
+            // check if order can be made
+            if (trade.isPresent()) {
+                Trade openOrder = trade.get();
+                log.info("Order can be made on this exchange {}", openOrder);
+                log.info("URL  {}", openOrder.getExchangeUrl());
+                return openOrder.getExchangeUrl();
+
+
+            }
+            log.info("Order can't be made, there is no match with your price");
+            log.info("Holding order for best Trade,  You cancel Cancel or Update to increase chance of fulfilling");
+            return "";
     }
 
+    public String performSellTrade(OrderRequestDto order, UUID userId, UUID portfolioId) throws IOException {
+        marketDataService.findOpenTrades(order.getProduct(),
+                OrderSide.BUY.name(), order.getType().name()).forEach(System.out::println);
 
-    public void executeBuyWithLimit(OrderRequestDto order, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
-        // filter for side, type and product
-        // get products with your buy price interval and contains quantities you have
-        // sort and get maximum quantity and place order on that exchange
-        Stream<Product> products = marketDataService.findOrders(order.getProduct(), order.getSide().name(), order.getType().name());
-        Optional<Product> newOrder = products.filter(product -> order.getPrice() <= product.getPrice() && order.getQuantity() <= product.getQuantity())
-                .max(Comparator.comparingDouble(Product::getQuantity));
-        if (newOrder.isPresent()) {
-            executeOrder(order, newOrder.get().getExchangeUrl(), portfolioId, userId);
+        // check the exchange to perform Trade on
+        List<String> tradeInfo =  marketDataService.getProductByTicker(order.getProduct()).
+                filter(product -> order.getPrice() >=  product.askPrice() - product.maxPriceShift()
+                        && order.getPrice() <= product.askPrice() + product.maxPriceShift()).
+                filter(product -> product.sellLimit() >= order.getQuantity()).map(TradeInfo::exchangeUrl).toList();
+
+        Stream<Trade> openTrades = null;
+        if (tradeInfo.size() == 2) {
+            // the two exchanges are valid so get Trades from both
+            openTrades = marketDataService.findOpenTrades(order.getProduct(),
+                    OrderSide.BUY.name(), order.getType().name());
+        } else if (tradeInfo.size() == 1) {
+            openTrades = marketDataService.findOpenTrades(order.getProduct(), OrderSide.BUY.name(),
+                    order.getType().name(), tradeInfo.get(0));
         }
+        tradeInfo.forEach(System.out::println);
+        // since it is a limit price make sure the available orders that have at most the price the client has
+        Optional<Trade>  trade = openTrades.filter(product ->  product.getPrice() <= order.getPrice())
+                // get the minimum price from open trades
+                .max(Comparator.comparingDouble(Trade::getPrice));
 
-    }
+        // check if order can be made
+        if (trade.isPresent()) {
+            Trade openOrder = trade.get();
+            log.info("Order can be made on this exchange {}", openOrder);
+            log.info("URL  {}", openOrder.getExchangeUrl());
+            return openOrder.getExchangeUrl();
 
 
-    public void executeSellWithLimit(OrderRequestDto order, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
-        // filter for side, type and product
-        // get products with your buy price interval and contains quantities you have
-        // sort and get maximum price (We need more money) and place order on that exchange
-        Stream<Product> products = marketDataService.findOrders(order.getProduct(), order.getSide().name(), order.getType().name());
-        Optional<Product> newOrder =  products.filter(product -> order.getPrice() <= product.getPrice() && order.getQuantity() <= product.getQuantity())
-                .max(Comparator.comparingDouble(Product::getPrice));
-        if (newOrder.isPresent()) {
-            executeOrder(order, newOrder.get().getExchangeUrl(), portfolioId, userId);
         }
+        log.info("Order can't be made, there is no match with your price");
+        log.info("Holding order for best Trade,  You cancel Cancel or Update to increase chance of fulfilling");
+        return "";
 
     }
 
-
-
-    private  boolean isBuyOrderReasonable(OrderRequestDto order) throws IOException, BuyOrderPriceNotReasonable {
-        Stream<ProductInfo> products =  marketDataService.getProductByTicker(order.getProduct());
-        boolean isReasonable =  products.map(ProductInfo::askPrice).anyMatch(productInfo -> productInfo-order.getPrice() < 0.11);
-        if (isReasonable) {
-            return true;
-        } throw new BuyOrderPriceNotReasonable();
-    }
-
-
-    public void makeAnOrder(UUID  userId, UUID portfolioId, OrderRequestDto order) throws Exception {
-        log.info("Processing order for user with id {}", userId);
-        makeLimitBuyOrder(order, userId);
-//            log.info("Client order is valid! Processing order");
-//            OrderEntity orderEntity = createOrderEntity(order, portfolioId, userId);
-//            log.info("Saving created order into database");
-//            orderRepository.save(orderEntity);
-//            log.info("Order saved in database with a pending flag!");
-//            log.info("Finding and Comparing order to various orders on exchange");
-//            Stream<Product> openOrders = marketDataService.findOrders(order.getProduct(), order.getType().name());
-//            log.info("Available open trades are .....................");
-//            Optional<Product> currentOrder = openOrders.findAny();
-//            log.info("Successful match found processing order on that exchange!");
-////            currentOrder.ifPresent(myOrder -> executeOrder(order, myOrder.getExchangeUrl()));
-//            log.info("Order submitted successfully");
-//            log.info("Waiting for feedback");
-//        }
-
-    }
 
 
 }

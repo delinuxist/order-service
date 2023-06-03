@@ -1,16 +1,19 @@
 package com.tradingengine.orderservice.marketdata.service;
 
-import com.tradingengine.orderservice.marketdata.models.Product;
-import com.tradingengine.orderservice.marketdata.models.ProductInfo;
+import com.tradingengine.orderservice.marketdata.models.Trade;
+import com.tradingengine.orderservice.marketdata.models.TradeInfo;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
 public interface MarketDataService {
-    Stream<ProductInfo> getProductByTicker(String ticker) throws IOException;
-    Stream<Product> findOrders(String product, String side) throws IOException;
-    Stream<Product> findOrders(String product, String side, String orderType) throws IOException;
+    Stream<TradeInfo> getProductByTicker(String ticker) throws IOException;
+    Stream<Trade> findOpenTrades(String product, String side) throws IOException;
+    Stream<Trade> findOpenTrades(String product, String side, String orderType, String exchangeOne) throws IOException;
 
-    List<Product> findOrders(String product) throws IOException;
+    Stream<Trade> findOpenTrades(String product, String side, String orderType) throws IOException;
+
+    List<Trade> findOpenTrades(String product) throws IOException;
+
 }

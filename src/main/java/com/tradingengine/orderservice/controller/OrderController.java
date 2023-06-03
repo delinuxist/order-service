@@ -5,16 +5,14 @@ import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
-import com.tradingengine.orderservice.marketdata.models.Product;
+import com.tradingengine.orderservice.marketdata.models.Trade;
 import com.tradingengine.orderservice.service.OrderService;
-import com.tradingengine.orderservice.service.impl.OrderServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -46,7 +44,7 @@ public class OrderController {
     }
 
     @GetMapping("/trades/{product}")
-    public List<Product> getOpenTrades(@PathVariable("product") String product) throws IOException {
+    public List<Trade> getOpenTrades(@PathVariable("product") String product) throws IOException {
         return orderService.getOpenTrades(product);
     }
 

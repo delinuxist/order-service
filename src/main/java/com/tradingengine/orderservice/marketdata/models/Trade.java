@@ -1,12 +1,6 @@
 package com.tradingengine.orderservice.marketdata.models;
 
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import lombok.*;
-
-import java.util.UUID;
-
-
 
 
 @Data
@@ -14,7 +8,7 @@ import java.util.UUID;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public  class Product {
+public  class Trade {
 
     private  String product;
     private  int quantity;

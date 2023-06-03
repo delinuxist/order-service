@@ -5,8 +5,7 @@ import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
-import com.tradingengine.orderservice.exception.verification.*;
-import com.tradingengine.orderservice.marketdata.models.Product;
+import com.tradingengine.orderservice.marketdata.models.Trade;
 
 import java.io.IOException;
 import java.util.List;
@@ -34,7 +33,7 @@ public interface OrderService {
     void makeAnOrder(UUID userId, UUID portfolioId, OrderRequestDto order) throws Exception;
     // after making necessary checks and validation we submit it based on the exchange type.
 
-    List<Product> getOpenTrades(String product) throws IOException;
+    List<Trade> getOpenTrades(String product) throws IOException;
 
 
 

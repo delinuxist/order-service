@@ -1,15 +1,14 @@
 package com.tradingengine.orderservice.marketdata.models;
 
-import lombok.*;
 
-
-public record ProductInfo(
+public record TradeInfo(
      String ticker,
      int sellLimit,
      double  lastTradedPrice,
      double maxPriceShift,
      double askPrice,
      double bidPrice,
-     int buyLimit
+     int buyLimit,
+     String exchangeUrl
 ){}
 
