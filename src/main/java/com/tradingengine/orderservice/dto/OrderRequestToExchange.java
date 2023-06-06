@@ -4,12 +4,17 @@ import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderType;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.stereotype.Component;
 
 @Setter
 @Getter
-public class OrderRequestDto{
+@Builder
+@Component
+public class OrderRequestToExchangeDto {
+
         @NotNull
        private String product;
         @NotNull
@@ -21,5 +26,7 @@ public class OrderRequestDto{
        private OrderSide side;
         @NotNull
        private OrderType type;
+
+
 }
 
