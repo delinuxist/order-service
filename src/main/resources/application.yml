@@ -1,13 +1,18 @@
 spring:
   application:
     name: order-service
-#  config:
-#    import: optional:configserver:http://localhost:8080
+    rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
+  #  config:
+  #    import: optional:configserver:http://localhost:8080
 
   datasource:
     username: postgres
-    url: jdbc:postgresql://localhost:5332/orderdb
-    password: password
+    url: jdbc:postgresql://localhost:5432/orderservice
+    password: 12345
   jpa:
     properties:
       hibernate:
@@ -21,12 +26,32 @@ spring:
 #    uris: https://localhost:8080
 #    password:
 
+
+rabbitmq:
+  queue:
+    name: 'order_queue'
+
+  exchange:
+    name: 'order_exchange'
+
+  routing:
+    key: 'routing_key'
+
 exchange:
-  one: https://exchange.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
-  two: https://exchange2.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
-  key: 7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+  one:
+    url: https://exchange.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+    apiKey: 7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+
+  two:
+    url: https://exchange2.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+    apiKey: 8835f08e-1825-4b8f-baf6-5b9770c9c9d9
+
+
+
+
+
 
 
 server:
-  port: 8080
+  port: 8082
 

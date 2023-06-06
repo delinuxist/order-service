@@ -1,44 +1,62 @@
 package com.tradingengine.orderservice.service;
 
-import com.tradingengine.orderservice.dto.OrderRequestDto;
+import com.tradingengine.orderservice.dto.OrderRequestToExchange;
 import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
+import com.tradingengine.orderservice.entity.OrderLeg;
+import com.tradingengine.orderservice.enums.OrderStatus;
+import com.tradingengine.orderservice.exception.order.OrderModificationFailureException;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
-import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
-import com.tradingengine.orderservice.exception.verification.*;
-import com.tradingengine.orderservice.marketdata.models.Product;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
 public interface OrderService {
-    OrderEntity placeOrder(UUID portfolioId, OrderRequestDto orderRequestDto) throws PortfolioNotFoundException;
+//    OrderEntity processAndPlaceOrder(UUID portfolioId, OrderRequestToExchange orderRequestToExchange) throws PortfolioNotFoundException;
+
 
     OrderStatusResponseDto checkOrderStatus(UUID orderID) throws OrderNotFoundException;
 
-    OrderEntity getOrderById(UUID orderID) throws OrderNotFoundException;
+    OrderStatusResponseDto checkOrderLegStatus(UUID orderId) throws OrderNotFoundException;
 
-    List<OrderEntity> getAllOrders();
+    OrderEntity saveOrderEntity(OrderEntity order);
 
-    Boolean cancelOrder(UUID order_id) throws OrderNotFoundException;
+    OrderEntity fetchOrderById(UUID orderId) throws OrderNotFoundException;
 
-    Boolean modifyOrder(UUID orderId, OrderRequestDto orderRequestDto) throws OrderNotFoundException;
+    List<OrderEntity> fetchAllOrders();
 
-    List<OrderEntity> fetchPendingOrders();
+    List<OrderLeg> fetchAllOrderLegs();
 
-    void updateOrderStatus(OrderEntity order);
+    List<OrderLeg> fetchAllOpenOrderLegs();
 
-    Boolean validateOrder(UUID portfolioId, OrderRequestDto orderRequestDto, UUID userId) throws IOException, BuyLimitExceededException, InsufficientBalanceException, BuyOrderPriceCannotBeMatched, SellLimitExceededException, StockNotAvailable, SellOrderPriceCannotBeMatched, BuyOrderPriceNotReasonable;
+    List<OrderEntity> fetchAllOpenOrdersForProduct(String product);
 
-    void executeOrder(OrderRequestDto order, String exchangeUrl);
+    List<OrderEntity> fetchAllOpenOrders();
 
-    void TryAnOrder(UUID userId, UUID portfolioId, OrderRequestDto order) throws Exception;
-    // after making necessary checks and validation we submit it based on the exchange type.
+    Boolean cancelOrder(UUID orderId, String exchangeUrl) throws OrderNotFoundException;
 
-    List<Product> getOpenTrades(String product) throws IOException;
+    Boolean modifyOrder(UUID orderId, OrderRequestToExchange orderRequestToExchange, String exchangeUrl) throws OrderNotFoundException, OrderModificationFailureException;
+
+    //todo? alr
+    void updateOrderStatus(OrderEntity order, OrderStatus orderStatus);
+
+    void updateOrderLegStatus(OrderLeg orderLeg, OrderStatus orderStatus);
+
+    String executeOrder(OrderRequestToExchange order, String exchangeUrl);
 
 
+    List<OrderEntity> fetchCancelledOrders();
+
+    List<OrderEntity> fetchFilledOrders();
+
+    OrderLeg saveOrderLeg(OrderLeg orderLeg);
+
+
+    //todo: what is this for????
+//    void TryAnOrder(UUID userId, UUID portfolioId, OrderRequestToExchange orderRequest) throws StockNotAvailable, BuyLimitExceededException, BuyOrderPriceNotReasonable, SellLimitExceededException, InsufficientBalanceException, SellOrderPriceCannotBeMatched, IOException, BuyOrderPriceCannotBeMatched, PortfolioNotFoundException;
+
+    //todo: refactor this, fetch pending orders from the queue (all orders not yet sent to the exchange are pending orders)
+//    List<OrderEntity> fetchPendingOrders();
 
 
 }

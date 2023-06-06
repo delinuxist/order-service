@@ -9,40 +9,29 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
+
 @Entity
-@Table(name = "orders")
+//@Table(name = "orders")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class OrderEntity {
+public class OrderLeg {
     @Id
-    @GeneratedValue
-    private UUID id;
+    UUID Id;
     private String product;
     private Double price;
     private Integer quantity;
-
-    private UUID userId;
     private OrderSide orderSide;
     private OrderType type;
-
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private OrderStatus status;
-    private String orderStatusInfo;
+    private OrderStatus orderLegStatus;
     private String exchangeUrl;
 
-    @ManyToOne(cascade = CascadeType.ALL, optional = false)
-    @JoinColumn(name = "portfolio_id", referencedColumnName = "portfolioId")
-    private PortfolioEntity portfolio;
-
-    @OneToMany(mappedBy = "orderEntity")
-    private List<OrderLeg> orderLegsOwnedByEntity;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", referencedColumnName = "id")
+    OrderEntity orderEntity;
 
 
 }

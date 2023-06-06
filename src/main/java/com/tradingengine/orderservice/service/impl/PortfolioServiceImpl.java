@@ -20,7 +20,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     public PortfolioEntity createPortfolio(PortfolioRequestDto portfolioRequestDto) {
         PortfolioEntity portfolio = PortfolioEntity.builder()
-                .name(portfolioRequestDto.name()).clientId(UUID.randomUUID())
+                .name(portfolioRequestDto.name()).userId(UUID.randomUUID())
                 .build();
         return portfolioRepository.save(portfolio);
     }

@@ -9,8 +9,12 @@ import java.util.stream.Stream;
 
 public interface MarketDataService {
     Stream<ProductInfo> getProductByTicker(String ticker) throws IOException;
-    Stream<Product> findOrders(String product, String side) throws IOException;
-    Stream<Product> findOrders(String product, String side, String orderType) throws IOException;
+
+    Stream<Product> findOrdersBySide(String product, String side) throws IOException;
+
+    Stream<Product> findOrdersBySideAndOrderType(String product, String side, String orderType) throws IOException;
 
     List<Product> findOrders(String product) throws IOException;
+
+//    Map<String, List<ProductInfo>>
 }

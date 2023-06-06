@@ -19,6 +19,7 @@ public class StockEntity {
     private Integer quantity;
     private Double price;
 
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "portfolio_id", referencedColumnName = "portfolioId")
     private PortfolioEntity portfolio;

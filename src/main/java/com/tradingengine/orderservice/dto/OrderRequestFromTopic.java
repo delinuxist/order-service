@@ -8,10 +8,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Setter
 @Getter
 @Builder
-public class OrderRequestToExchange {
+public class OrderRequestFromTopic {
 
     @NotNull
     private String product;
@@ -24,7 +26,9 @@ public class OrderRequestToExchange {
     private OrderSide orderSide;
     @NotNull
     private OrderType type;
-
+    @NotNull
+    private UUID portfolioId;
+    @NotNull
+    private UUID userId;
 
 }
-

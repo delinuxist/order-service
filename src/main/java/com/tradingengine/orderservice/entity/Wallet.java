@@ -15,11 +15,12 @@ import java.util.UUID;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
+
 public class Wallet {
     @Id
     @GeneratedValue
     private UUID id;
     private UUID  clientId;
-    private double amount;
+    private Double amount;
 
 }

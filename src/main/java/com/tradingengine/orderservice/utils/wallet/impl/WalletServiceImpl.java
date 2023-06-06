@@ -1,8 +1,8 @@
-package com.tradingengine.orderservice.addedfunctionality.wallet.impl;
+package com.tradingengine.orderservice.utils.wallet.impl;
 
-import com.tradingengine.orderservice.addedfunctionality.wallet.WalletService;
 import com.tradingengine.orderservice.entity.Wallet;
 import com.tradingengine.orderservice.repository.WalletRepository;
+import com.tradingengine.orderservice.utils.wallet.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -12,7 +12,7 @@ import java.util.UUID;
 @Service
 public class WalletServiceImpl implements WalletService {
     @Autowired
-    private  WalletRepository walletRepository;
+    private WalletRepository walletRepository;
 
     @Override
     public Optional<Wallet> getWalletByUserId(UUID userId) {

@@ -1,20 +1,15 @@
 package com.tradingengine.orderservice.controller;
 
-import com.tradingengine.orderservice.dto.OrderRequestDto;
+import com.tradingengine.orderservice.dto.OrderRequestToExchange;
 import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
+import com.tradingengine.orderservice.exception.order.OrderModificationFailureException;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
-import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
-import com.tradingengine.orderservice.marketdata.models.Product;
 import com.tradingengine.orderservice.service.OrderService;
-import com.tradingengine.orderservice.service.impl.OrderServiceImpl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -23,16 +18,11 @@ import java.util.UUID;
 public class OrderController {
 
     private final OrderService orderService;
-
-    @PostMapping("/{portfolioId}")
-    public OrderEntity createOrder(@PathVariable("portfolioId") UUID portfolioId,
-                                   @Validated @RequestBody OrderRequestDto orderRequestDto) throws PortfolioNotFoundException {
-        return orderService.placeOrder(portfolioId,orderRequestDto);
-    }
+    
 
     @GetMapping("/getOrder/{orderId}")
     public OrderEntity getOrderById(@PathVariable("orderId") UUID orderId) throws OrderNotFoundException {
-        return orderService.getOrderById(orderId);
+        return orderService.fetchOrderById(orderId);
     }
 
     @GetMapping("/checkStatus/{orderId}")
@@ -42,31 +32,34 @@ public class OrderController {
 
     @GetMapping("/allOrders")
     public List<OrderEntity> getAllOrders() {
-        return orderService.getAllOrders();
+        return orderService.fetchAllOrders();
     }
 
     @GetMapping("/trades/{product}")
-    public List<Product> getOpenTrades(@PathVariable("product") String product) throws IOException {
-        return orderService.getOpenTrades(product);
+    public List<OrderEntity> getOpenTrades(@PathVariable("product") String product) {
+        return orderService.fetchAllOpenOrdersForProduct(product);
     }
 
     @DeleteMapping("/{orderId}")
-    public Boolean cancelOrder(@PathVariable("orderId") UUID orderId) throws OrderNotFoundException {
-         return orderService.cancelOrder(orderId);
+    public Boolean cancelOrder(@PathVariable("orderId") UUID orderId, String exchangeUrl) throws OrderNotFoundException {
+        return orderService.cancelOrder(orderId, exchangeUrl);
     }
 
     @PutMapping("/{orderId}")
     public Boolean modifyExistingOrder(
             @PathVariable("orderId") UUID orderId,
-            @RequestBody OrderRequestDto orderRequestDto
-    ) throws OrderNotFoundException {
-        return orderService.modifyOrder(orderId, orderRequestDto);
+            @RequestBody OrderRequestToExchange orderRequestToExchange,
+            String exchangeUrl
+    ) throws OrderNotFoundException, OrderModificationFailureException {
+        return orderService.modifyOrder(orderId, orderRequestToExchange, exchangeUrl);
     }
 
-    @PostMapping("/{userId}/{portfolioId}")
-    public void createAnOrder(@PathVariable("portfolioId") UUID portfolioId, @PathVariable("userId") UUID userId,
-                                   @Validated @RequestBody OrderRequestDto orderRequestDto) throws Exception {
-        orderService.TryAnOrder(userId, portfolioId, orderRequestDto);
-    }
+
+//    @PostMapping("/{userId}/{portfolioId}")
+//    public void createAnOrder(@PathVariable("portfolioId") UUID portfolioId, @PathVariable("userId") UUID userId,
+//                              @Validated @RequestBody OrderRequestToExchange orderRequestToExchange) throws Exception {
+//        orderService.TryAnOrder(userId, portfolioId, orderRequestToExchange);
+//    }
+
 
 }

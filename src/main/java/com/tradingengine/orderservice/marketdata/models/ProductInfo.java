@@ -10,6 +10,8 @@ public record ProductInfo(
      double maxPriceShift,
      double askPrice,
      double bidPrice,
-     int buyLimit
-){}
+     int buyLimit,
+     String exchangeUrl
+)
+{}
 

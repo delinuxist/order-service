@@ -3,6 +3,7 @@ package com.tradingengine.orderservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -18,6 +19,8 @@ public class PortfolioEntity {
     @GeneratedValue
     private UUID portfolioId;
     private String name;
-    @GeneratedValue
-    private UUID clientId;
+    private UUID userId;
+
+    @OneToMany(mappedBy = "portfolio")
+    List<StockEntity> stocksOwned;
 }

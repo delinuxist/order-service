@@ -9,9 +9,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+
 public class Order {
     private String product;
-    private int quantity;
+    private Integer quantity;
     private String side;
     private String orderType;
     private String exchangeUrl;

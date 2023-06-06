@@ -15,24 +15,25 @@ import java.util.stream.Stream;
 public class MarketDataServiceImpl implements MarketDataService {
     @Autowired
     private ElasticSearchQuery elasticSearchQuery;
+
     @Override
     public Stream<ProductInfo> getProductByTicker(String ticker) throws IOException {
-       return elasticSearchQuery.findProductByTicker(ticker);
+        return elasticSearchQuery.findProductByTicker(ticker);
     }
 
     @Override
-    public Stream<Product> findOrders(String product, String side) throws IOException {
-        return elasticSearchQuery.findOrders(product, side);
+    public Stream<Product> findOrdersBySide(String product, String side) throws IOException {
+        return elasticSearchQuery.findOrdersBySide(product, side);
     }
 
     @Override
-    public Stream<Product> findOrders(String product, String side, String orderType) throws IOException {
-        return elasticSearchQuery.findOrders(product, side, orderType);
+    public Stream<Product> findOrdersBySideAndOrderType(String product, String side, String orderType) throws IOException {
+        return elasticSearchQuery.findOrdersBySideAndOrderType(product, side, orderType);
     }
 
     @Override
     public List<Product> findOrders(String product) throws IOException {
-       return  elasticSearchQuery.findOrders(product);
+        return elasticSearchQuery.findOrders(product);
     }
 
 
