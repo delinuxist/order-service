@@ -1,4 +1,14 @@
 spring:
+  redis:
+    host: localhost
+    port: 6379
+
+  rabbitmq:
+    host: localhost # RabbitMQ host.
+    password: guest
+    port: 5672 # RabbitMQ port.
+    username: guest # Login user to authenticate to the broker.
+
   application:
     name: order-service
 #  config:
@@ -30,4 +40,18 @@ exchange:
 
 server:
   port: 8080
+
+rabbitmq:
+  queue:
+    name: orders
+    split:
+      name: split_orders
+  exchange:
+    name: orders_exchange
+  routing:
+    key: orders_routing_key
+    split:
+      key: split_orders_routing_key
+
+
 

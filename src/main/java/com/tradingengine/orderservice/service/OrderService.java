@@ -28,7 +28,7 @@ public interface OrderService {
 
     void updateOrderStatus(OrderEntity order);
 
-    void executeOrder(OrderRequestDto order, String exchangeUrl, UUID portfolioId, UUID userId) throws PortfolioNotFoundException;
+    Object executeOrder(OrderRequestDto order, String exchangeUrl, UUID portfolioId, UUID userId) throws PortfolioNotFoundException;
 
     void makeAnOrder(UUID userId, UUID portfolioId, OrderRequestDto order) throws Exception;
     // after making necessary checks and validation we submit it based on the exchange type.

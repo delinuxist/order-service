@@ -1,0 +1,30 @@
+services:
+  db:
+    container_name: postgres-order-service-db
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - /var/lib/postgres
+    ports:
+      - "5532:5432"
+    networks:
+      - db
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+
+
+networks:
+  db:
+    driver: bridge
+

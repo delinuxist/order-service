@@ -5,6 +5,7 @@ import com.tradingengine.orderservice.entity.PortfolioEntity;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioDeletionFailedException;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
 import com.tradingengine.orderservice.service.PortfolioService;
+import com.tradingengine.orderservice.service.StockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -73,4 +74,5 @@ public class PortfolioController {
     ) throws PortfolioNotFoundException, PortfolioDeletionFailedException {
         portfolioService.deletePortfolio(portfolioId);
     }
+
 }

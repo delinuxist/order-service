@@ -67,6 +67,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         return portfolioRepository.findById(portfolioId)
                 .orElseThrow(() -> new PortfolioNotFoundException(portfolioId));
     }
+
 }
 
 

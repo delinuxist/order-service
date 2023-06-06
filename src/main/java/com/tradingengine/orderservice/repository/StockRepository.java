@@ -17,4 +17,5 @@ public interface StockRepository extends JpaRepository<StockEntity,Long> {
     Optional<StockEntity> findStockEntityByPortfolio_ClientIdAndTicker(UUID portfolioId, String ticker);
 
 
+
 }

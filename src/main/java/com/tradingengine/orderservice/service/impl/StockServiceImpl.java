@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 
 @Service
@@ -25,5 +26,10 @@ public class StockServiceImpl implements StockService {
     @Override
     public void saveStock(StockEntity stock) {
         stockRepository.save(stock);
+    }
+
+    @Override
+    public Optional<StockEntity> fetchStockByPortfolioIdAndTicker(UUID portfolioId, String ticker) {
+        return stockRepository.findStockEntityByPortfolio_ClientIdAndTicker(portfolioId, ticker);
     }
 }
