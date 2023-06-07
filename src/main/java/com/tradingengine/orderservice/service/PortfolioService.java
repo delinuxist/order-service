@@ -22,5 +22,5 @@ public interface PortfolioService {
 
     PortfolioEntity getPortfolioById(UUID portfolioId) throws PortfolioNotFoundException;
 
-    PortfolioEntity fetchPortfolioByUserId(UUID userId) throws PortfolioNotFoundException;
+    List<PortfolioEntity> fetchPortfolioByUserId(UUID userId)  ;
 }

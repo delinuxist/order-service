@@ -20,6 +20,8 @@ import java.util.UUID;
 @Builder
 public class OrderLeg {
     @Id
+    @GeneratedValue
+    UUID orderLegId;
     String Id;
     private String product;
     private Double price;

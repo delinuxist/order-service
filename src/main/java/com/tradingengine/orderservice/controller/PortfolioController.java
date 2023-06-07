@@ -51,13 +51,11 @@ public class PortfolioController {
 
     //fetch by userId
     @GetMapping("/user/{userId}")
-    public ResponseEntity<PortfolioEntity> fetchPortfolioByUserId(
+    public List<PortfolioEntity> fetchPortfolioByUserId(
             @PathVariable("userId")
             UUID userId
-    ) throws PortfolioNotFoundException {
-        return ResponseEntity
-                .ok()
-                .body(portfolioService.fetchPortfolioByUserId(userId));
+    )  {
+        return portfolioService.fetchPortfolioByUserId(userId);
     }
 
 

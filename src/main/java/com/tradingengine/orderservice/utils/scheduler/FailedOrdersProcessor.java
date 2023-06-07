@@ -31,9 +31,9 @@ public class FailedOrdersProcessor {
 
         for (OrderLeg order : orderLegList) {
             OrderRequestToExchange orderRequest = builder.rebuildOrderRequest(order.getProduct(), order.getQuantity(), order.getPrice(), order.getOrderSide(), order.getType());
-            String response = String.valueOf(webClientService.placeOrderOnExchangeAndGetID(orderRequest, order.getExchangeUrl()));
+            String response = webClientService.placeOrderOnExchangeAndGetID(orderRequest, order.getExchangeUrl());
 
-            OrderStatus orderStatus = UUID.fromString(response).equals(UUID.fromString("")) ? OrderStatus.FAILED : OrderStatus.OPEN;
+            OrderStatus orderStatus = response.equals("") ? OrderStatus.FAILED : OrderStatus.OPEN;
             order.setOrderLegStatus(orderStatus);
             orderService.saveOrderLeg(order);
         }

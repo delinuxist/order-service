@@ -248,6 +248,7 @@ public class OrderProcessor {
             currentExecutedOrderLeg.setOrderLegStatus(OrderStatus.OPEN);
         }
         currentExecutedOrderLeg.setId(orderIdFromExchange);
+        log.info("**************************** {}", currentExecutedOrderLeg);
         orderLegRepository.save(currentExecutedOrderLeg);
 
 

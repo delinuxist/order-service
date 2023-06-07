@@ -56,6 +56,7 @@ public class OrderServiceImpl implements OrderService {
         Optional<PortfolioEntity> portfolio = portfolioRepository.findByPortfolioId(portfolioId);
         if (portfolio.isEmpty()) {
             System.out.println("No portfolio with such id");
+            throw new PortfolioNotFoundException(portfolioId);
         }
         return orderProcessor.processOrder(orderRequestToExchange, portfolioId, portfolio.get().getUserId());
 

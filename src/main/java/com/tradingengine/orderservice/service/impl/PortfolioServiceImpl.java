@@ -37,12 +37,8 @@ public class PortfolioServiceImpl implements PortfolioService {
         return portfolio.get();
     }
 
-    public PortfolioEntity fetchPortfolioByUserId(UUID userId) throws PortfolioNotFoundException {
-        Optional<PortfolioEntity> portfolio = portfolioRepository.findByUserId(userId);
-        if (portfolio.isEmpty()) {
-            throw new PortfolioNotFoundException(userId);
-        }
-        return portfolio.get();
+    public List<PortfolioEntity> fetchPortfolioByUserId(UUID userId)  {
+       return  portfolioRepository.findByUserId(userId);
     }
 
     public PortfolioEntity updatePortfolio(

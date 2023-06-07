@@ -34,9 +34,10 @@ public class WebClientService {
 
     public String placeOrderOnExchangeAndGetID(OrderRequestToExchange orderRequestToExchange, String exchangeUrl) {
         String apiKey = getApiKeyForExchange(exchangeUrl);
+        log.info("Order to be sent    {}", orderRequestToExchange);
         return webClient.post()
                 .uri(exchangeUrl + apiKey + "/order")
-                .body(Mono.just(orderRequestToExchange), orderRequestToExchange.getClass())
+                .body(Mono.just(orderRequestToExchange), OrderRequestToExchange.class)
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> log.info("Error occurred during executing order "))
@@ -59,13 +60,15 @@ public class WebClientService {
 
     public Boolean modifyOrderById(UUID orderId, OrderRequestToExchange orderRequestToExchange, String exchangeUrl) {
         String apiKey = getApiKeyForExchange(exchangeUrl);
+        log.info("Order to be sent    {}", orderRequestToExchange);
         return webClient.put()
                 .uri(exchangeUrl + apiKey + "/order/{orderId}")
-                .body(Mono.just(orderRequestToExchange), orderRequestToExchange.getClass())
+                .body(Mono.just(orderRequestToExchange), OrderRequestToExchange.class)
                 .retrieve()
                 .bodyToMono(Boolean.class)
                 .doOnError(throwable -> log.info("Error occurred during order update"))
-                .onErrorReturn(false).block();
+                .onErrorReturn(false)
+                .block();
     }
 
 

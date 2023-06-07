@@ -17,11 +17,27 @@ public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
     )
     List<OrderEntity> findPendingOrders();
 
+    @Query(
+            nativeQuery = true,
+            value = "select * from orders where status=1"
+    )
     List<OrderEntity> findFilledOrders();
 
+    @Query(
+            nativeQuery = true,
+            value = "select * from orders where status=2"
+    )
     List<OrderEntity> findCancelledOrders();
 
+    @Query(
+            nativeQuery = true,
+            value = "select * from orders where status=3"
+    )
     List<OrderEntity> findPartiallyFilledOrders();
 
+
+    @Query(nativeQuery = true,
+            value = "select * from orders where status=4"
+    )
     List<OrderEntity> findFailedOrders();
 }
