@@ -3,6 +3,8 @@ package com.tradingengine.orderservice.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "stocks")
 @Setter
@@ -14,10 +16,11 @@ import lombok.*;
 public class StockEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long stockId;
+    private UUID stockId;
     private String ticker;
     private Integer quantity;
     private Double price;
+    private UUID userId;
 
 
     @ManyToOne(optional = false)

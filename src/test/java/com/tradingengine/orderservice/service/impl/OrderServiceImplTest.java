@@ -29,12 +29,12 @@ class OrderServiceImplTest {
     private PortfolioEntity portfolio;
 
     @Mock
-    WebClientService webClient;
+    WebClientService webClientService;
 
     @Mock
     OrderRequestToExchange orderRequest;
 
-    @Value("${exchange.one}")
+    @Value("${MalOne.url}")
     String exchangeUrl;
 
     @Test
@@ -65,9 +65,9 @@ class OrderServiceImplTest {
     @Test
     void executeOrder() {
         UUID actualId = UUID.randomUUID();
-        when(webClient.placeOrderOnExchangeAndGetID(orderRequest, exchangeUrl)).thenReturn(actualId);
+        when(webClientService.placeOrderOnExchangeAndGetID(orderRequest, exchangeUrl)).thenReturn(actualId);
 
-        var returnedUUID = orderService.executeOrder(orderRequest, exchangeUrl);
+        var returnedUUID = webClientService.placeOrderOnExchangeAndGetID(orderRequest, exchangeUrl);
         assertEquals(actualId, returnedUUID);
     }
 }

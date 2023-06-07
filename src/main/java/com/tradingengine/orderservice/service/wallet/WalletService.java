@@ -1,4 +1,4 @@
-package com.tradingengine.orderservice.utils.wallet;
+package com.tradingengine.orderservice.service.wallet;
 
 import com.tradingengine.orderservice.entity.Wallet;
 

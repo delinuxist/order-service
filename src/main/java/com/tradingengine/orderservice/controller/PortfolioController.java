@@ -34,21 +34,32 @@ public class PortfolioController {
 
     // fetch all portfolios
     @GetMapping
-
     public ResponseEntity<List<PortfolioEntity>> fetchAllPortfolios() {
         return ResponseEntity.ok(portfolioService.fetchAllPortfolios());
     }
 
     // fetch portfolio by portfolioId
     @GetMapping("/{portfolioId}")
-    public ResponseEntity<PortfolioEntity> fetchPortfolioById(
+    public ResponseEntity<PortfolioEntity> fetchPortfolioByPortfolioId(
             @PathVariable("portfolioId")
             UUID portfolioId
     ) throws PortfolioNotFoundException {
         return ResponseEntity
                 .ok()
-                .body(portfolioService.fetchPortfolioById(portfolioId));
+                .body(portfolioService.fetchPortfolioByPortfolioId(portfolioId));
     }
+
+    //fetch by userId
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<PortfolioEntity> fetchPortfolioByUserId(
+            @PathVariable("userId")
+            UUID userId
+    ) throws PortfolioNotFoundException {
+        return ResponseEntity
+                .ok()
+                .body(portfolioService.fetchPortfolioByUserId(userId));
+    }
+
 
     // update portfolio
     @PatchMapping("/{portfolioId}")

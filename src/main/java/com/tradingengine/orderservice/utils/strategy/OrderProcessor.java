@@ -22,7 +22,8 @@ import com.tradingengine.orderservice.marketdata.models.Product;
 import com.tradingengine.orderservice.marketdata.service.MarketDataService;
 import com.tradingengine.orderservice.repository.OrderLegRepository;
 import com.tradingengine.orderservice.repository.OrderRepository;
-import com.tradingengine.orderservice.service.OrderService;
+import com.tradingengine.orderservice.utils.ModelBuilder;
+import com.tradingengine.orderservice.utils.WebClientService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,61 +35,61 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-import static com.tradingengine.orderservice.utils.ModelBuilder.buildOrderEntity;
-import static com.tradingengine.orderservice.utils.ModelBuilder.buildOrderLeg;
-
 
 @Service
 @Slf4j
 public class OrderProcessor {
 
     private final MarketDataService marketDataService;
-    private final OrderService orderService;
     private final OrderRepository orderRepository;
     private final OrderLegRepository orderLegRepository;
+    private final WebClientService webClientService;
+    private final ModelBuilder builder;
 
-    @Value("${exchange.one.url}")
+    @Value("${MalOne.url}")
     private String exchangeOne;
 
     //constructor
     @Autowired
-    public OrderProcessor(MarketDataService marketDataService, OrderService orderService, OrderRepository orderRepository, OrderLegRepository orderLegRepository) {
+    public OrderProcessor(MarketDataService marketDataService, OrderRepository orderRepository, OrderLegRepository orderLegRepository, WebClientService webClientService, ModelBuilder builder) {
         this.marketDataService = marketDataService;
-        this.orderService = orderService;
+        this.webClientService = webClientService;
         this.orderRepository = orderRepository;
         this.orderLegRepository = orderLegRepository;
+        this.builder = builder;
     }
 
-    public void processOrder(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
-        if (orderRequest.getOrderSide().equals(OrderSide.BUY)) {
-            buyOperation(orderRequest, portfolioId, userId);
+    public String processOrder(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
+        if (orderRequest.getSide().equals(OrderSide.BUY)) {
+            return buyOperation(orderRequest, portfolioId, userId);
         }
-        sellOperation(orderRequest, portfolioId, userId);
+        return sellOperation(orderRequest, portfolioId, userId);
     }
 
 
     @Transactional
-    private void buyOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
+    private String buyOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
 
         //gets and stores list of openOrders with the same price as it.
         List<Product> allOpenSellOrders = getOpenOrdersBasedOnType(orderRequest);
 
         log.info("Saving created order into database");
-        OrderEntity orderEntity = buildOrderEntity(orderRequest, portfolioId, userId);
+        OrderEntity orderEntity = builder.buildOrderEntity(orderRequest, portfolioId, userId);
         orderRepository.save(orderEntity);
 
         if (allOpenSellOrders.isEmpty()) {
             //place order on exchange directly without splitting (since you're first one to transact)
-            UUID orderIdFromExchange = UUID.fromString(orderService.executeOrder(orderRequest, exchangeOne));
+            UUID orderIdFromExchange = UUID.fromString(executeOrder(orderRequest, exchangeOne));
 
             orderEntity.setStatus(OrderStatus.OPEN);
             orderRepository.save(orderEntity);
 
-            OrderLeg currentExecutedOrderLeg = buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
+            OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
 
             OrderStatus orderStatus = orderIdFromExchange.equals(UUID.fromString("")) ? OrderStatus.FAILED : OrderStatus.OPEN;
             setOrderLegStatusFromResponse(currentExecutedOrderLeg, orderStatus);
             orderLegRepository.save(currentExecutedOrderLeg);
+//            return true;
 
         } else {
             int quantitySent = 0;
@@ -117,9 +118,9 @@ public class OrderProcessor {
                         orderRequest.setPrice(openOrder.getPrice());
 
                         //change returned orderId from string to UUID
-                        UUID orderIdFromExchange = UUID.fromString(orderService.executeOrder(orderRequest, exchangeUrl));
+                        UUID orderIdFromExchange = UUID.fromString(executeOrder(orderRequest, exchangeUrl));
 
-                        OrderLeg currentExecutedOrderLeg = buildOrderLeg(orderIdFromExchange, exchangeUrl, orderEntity, quantityToSend);
+                        OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeUrl, orderEntity, quantityToSend);
 
                         OrderStatus orderStatus = orderIdFromExchange.equals(UUID.fromString("")) ? OrderStatus.FAILED : OrderStatus.OPEN;
                         setOrderLegStatusFromResponse(currentExecutedOrderLeg, orderStatus);
@@ -134,9 +135,9 @@ public class OrderProcessor {
                         orderRequest.setQuantity(currentOpenOrderQuantity);
                         orderRequest.setPrice(openOrder.getPrice());
 
-                        UUID orderIdFromExchange = UUID.fromString(orderService.executeOrder(orderRequest, exchangeUrl));
+                        UUID orderIdFromExchange = UUID.fromString(executeOrder(orderRequest, exchangeUrl));
 
-                        OrderLeg currentExecutedOrderLeg = buildOrderLeg(orderIdFromExchange, exchangeUrl, orderEntity, currentOpenOrderQuantity);
+                        OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeUrl, orderEntity, currentOpenOrderQuantity);
 
                         OrderStatus orderStatus = orderIdFromExchange.equals(UUID.fromString("")) ? OrderStatus.FAILED : OrderStatus.OPEN;
                         setOrderLegStatusFromResponse(currentExecutedOrderLeg, orderStatus);
@@ -147,15 +148,16 @@ public class OrderProcessor {
                 }
             }
         }
+        return "Order Processed. Order id is:" + orderEntity.getId();
     }
 
     @Transactional
-    private void sellOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws
+    private String sellOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws
             IOException, PortfolioNotFoundException {
 
         //extract fields from order request and build the order
         log.info("Saving created order into database");
-        OrderEntity orderEntity = buildOrderEntity(orderRequest, portfolioId, userId);
+        OrderEntity orderEntity = builder.buildOrderEntity(orderRequest, portfolioId, userId);
         orderRepository.save(orderEntity);
         log.info("Order saved in database with a pending flag!");
 
@@ -167,9 +169,9 @@ public class OrderProcessor {
 
         if (allOpenBuyOrders.isEmpty()) {
             //place order on exchange directly without splitting (since you're first one to transact)
-            UUID orderIdFromExchange = UUID.fromString(orderService.executeOrder(orderRequest, exchangeOne));
+            UUID orderIdFromExchange = UUID.fromString(executeOrder(orderRequest, exchangeOne));
 
-            OrderLeg currentExecutedOrderLeg = buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
+            OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
 
             OrderStatus orderStatus = orderIdFromExchange.equals(UUID.fromString("")) ? OrderStatus.FAILED : OrderStatus.OPEN;
             setOrderLegStatusFromResponse(currentExecutedOrderLeg, orderStatus);
@@ -201,10 +203,10 @@ public class OrderProcessor {
                         orderRequest.setQuantity(quantityToSend);
                         orderRequest.setPrice(openOrder.getPrice());
 
-                        UUID orderIdFromExchange = UUID.fromString(orderService.executeOrder(orderRequest, exchangeUrl));
+                        UUID orderIdFromExchange = UUID.fromString(executeOrder(orderRequest, exchangeUrl));
 
                         //save order leg to the orderEntity to identify with it
-                        OrderLeg currentExecutedOrderLeg = buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
+                        OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
 
                         OrderStatus orderStatus = orderIdFromExchange.equals(UUID.fromString("")) ? OrderStatus.FAILED : OrderStatus.OPEN;
                         setOrderLegStatusFromResponse(currentExecutedOrderLeg, orderStatus);
@@ -221,10 +223,10 @@ public class OrderProcessor {
                         orderRequest.setQuantity(currentOpenOrderQuantity);
                         orderRequest.setPrice(openOrder.getPrice());
 
-                        UUID orderIdFromExchange = UUID.fromString(orderService.executeOrder(orderRequest, exchangeUrl));
+                        UUID orderIdFromExchange = UUID.fromString(executeOrder(orderRequest, exchangeUrl));
 
                         //save order leg to the orderEntity to identify with it
-                        OrderLeg currentExecutedOrderLeg = buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
+                        OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
 
                         OrderStatus orderStatus = orderIdFromExchange.equals(UUID.fromString("")) ? OrderStatus.FAILED : OrderStatus.OPEN;
                         setOrderLegStatusFromResponse(currentExecutedOrderLeg, orderStatus);
@@ -235,13 +237,14 @@ public class OrderProcessor {
                 }
             }
         }
+        return "Order Processed. Order id is:" + orderEntity.getId();
     }
 
 
     // frequently used methods
     public List<Product> getOpenOrdersBasedOnType(OrderRequestToExchange orderRequest) throws IOException {
         List<Product> allOpenSellOrders;
-        String side = orderRequest.getOrderSide().toString();
+        String side = orderRequest.getSide().toString();
 
         //if order is a limit buy order, get only open orders that match its price
         if (orderRequest.getType().equals(OrderType.LIMIT)) {
@@ -261,6 +264,13 @@ public class OrderProcessor {
         orderLegRepository.save(currentExecutedOrderLeg);
     }
 
+
+    public String executeOrder(OrderRequestToExchange order, String exchangeUrl) {
+        log.info("Executing the order! ********************");
+        String response = (webClientService.placeOrderOnExchangeAndGetID(order, exchangeUrl)).toString();
+        log.info("Order Executed! You will be notified shortly, OrderID is ------>  {}", response);
+        return response;
+    }
 
 // todo: reduce cash balance in wallet (sample)
 /*

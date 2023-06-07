@@ -12,7 +12,6 @@ import lombok.Setter;
 @Getter
 @Builder
 public class OrderRequestToExchange {
-
     @NotNull
     private String product;
     @NotNull
@@ -21,7 +20,7 @@ public class OrderRequestToExchange {
     @NotNull
     private Double price;
     @NotNull
-    private OrderSide orderSide;
+    private OrderSide side;
     @NotNull
     private OrderType type;
 

@@ -26,25 +26,23 @@ spring:
 #    uris: https://localhost:8080
 #    password:
 
+#
+#rabbitmq:
+#  queue:
+#    name: 'order_queue'
+#
+#  exchange:
+#    name: 'order_exchange'
+#
+#  routing:
+#    key: 'routing_key'
 
-rabbitmq:
-  queue:
-    name: 'order_queue'
-
-  exchange:
-    name: 'order_exchange'
-
-  routing:
-    key: 'routing_key'
-
-exchange:
-  one:
-    url: https://exchange.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
-    apiKey: 7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
-
-  two:
-    url: https://exchange2.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
-    apiKey: 8835f08e-1825-4b8f-baf6-5b9770c9c9d9
+MalOne:
+  url: https://exchange.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+  apiKey: 7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+MalTwo:
+  url: https://exchange2.matraining.com/7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
+  apiKey: 8835f08e-1825-4b8f-baf6-5b9770c9c9d9
 
 
 

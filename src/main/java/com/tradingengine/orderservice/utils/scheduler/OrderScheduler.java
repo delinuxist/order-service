@@ -8,58 +8,58 @@ import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderStatus;
 import com.tradingengine.orderservice.service.OrderService;
 import com.tradingengine.orderservice.service.StockService;
+import com.tradingengine.orderservice.utils.ModelBuilder;
 import com.tradingengine.orderservice.utils.WebClientService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-import static com.tradingengine.orderservice.utils.ModelBuilder.buildStockEntity;
-
-@Component
+@Service
 @RequiredArgsConstructor
 public class OrderScheduler {
 
     private final OrderService orderService;
     private final StockService stockService;
     private final WebClientService webClientService;
+    private final ModelBuilder builder;
 
 
-    @Scheduled(cron = "*/20 * * * *")
-    private void orderStatusUpdater() {
-        List<OrderEntity> orderEntities = orderService.fetchAllOrders();
+//    @Scheduled(cron = "*/20 * * * * *")
+//    private void orderStatusUpdater() {
+//        List<OrderEntity> orderEntities = orderService.fetchAllOrders();
+//
+//        for (OrderEntity orderEntity : orderEntities) {
+//            List<OrderLeg> orderLegsOwnedByOrder = orderEntity.getOrderLegsOwnedByEntity();
+//
+//            //if all order legs are fulfilled, order itself is fulfilled, else, etc
+//            boolean allOrderLegsFulfilled = orderLegsOwnedByOrder
+//                    .stream()
+//                    .allMatch(orderLeg -> orderLeg.getOrderLegStatus().equals(OrderStatus.FILLED));
+//
+//            boolean allOrderLegsFailed = orderLegsOwnedByOrder
+//                    .stream()
+//                    .allMatch(orderLeg -> orderLeg.getOrderLegStatus().equals(OrderStatus.FAILED));
+//
+//            boolean someOrderLegsSucceeded = orderLegsOwnedByOrder
+//                    .stream()
+//                    .anyMatch(orderLeg -> orderLeg.getOrderLegStatus().equals(OrderStatus.FILLED));
+//
+//            if (allOrderLegsFulfilled) {
+//                orderEntity.setStatus(OrderStatus.FILLED);
+//            } else if (allOrderLegsFailed) {
+//                orderEntity.setStatus(OrderStatus.PENDING);
+//            } else if (someOrderLegsSucceeded) {
+//                orderEntity.setStatus(OrderStatus.PARTIAL_FILL);
+//            } else {
+//                orderEntity.setStatus(OrderStatus.OPEN);
+//            }
+//            orderService.saveOrderEntity(orderEntity);
+//        }
+//    }
 
-        for (OrderEntity orderEntity : orderEntities) {
-            List<OrderLeg> orderLegsOwnedByOrder = orderEntity.getOrderLegsOwnedByEntity();
-
-            //if all order legs are fulfilled, order itself is fulfilled, else, etc
-            boolean allOrderLegsFulfilled = orderLegsOwnedByOrder
-                    .stream()
-                    .allMatch(orderLeg -> orderLeg.getOrderLegStatus().equals(OrderStatus.FILLED));
-
-            boolean allOrderLegsFailed = orderLegsOwnedByOrder
-                    .stream()
-                    .allMatch(orderLeg -> orderLeg.getOrderLegStatus().equals(OrderStatus.FAILED));
-
-            boolean someOrderLegsSucceeded = orderLegsOwnedByOrder
-                    .stream()
-                    .anyMatch(orderLeg -> orderLeg.getOrderLegStatus().equals(OrderStatus.FILLED));
-
-            if (allOrderLegsFulfilled) {
-                orderEntity.setStatus(OrderStatus.FILLED);
-            } else if (allOrderLegsFailed) {
-                orderEntity.setStatus(OrderStatus.PENDING);
-            } else if (someOrderLegsSucceeded) {
-                orderEntity.setStatus(OrderStatus.PARTIAL_FILL);
-            } else {
-                orderEntity.setStatus(OrderStatus.OPEN);
-            }
-            orderService.saveOrderEntity(orderEntity);
-        }
-    }
-
-    @Scheduled(cron = "*/20 * * * *")
+    @Scheduled(cron = "*/20 * * * * *")
     private void orderLegsStatusUpdater() {
         List<OrderLeg> orderLegs = orderService.fetchAllOpenOrderLegs();
 
@@ -89,7 +89,7 @@ public class OrderScheduler {
                 stock.setPrice(stock.getPrice() + order.getPrice());
             }
         } else {
-            stock = buildStockEntity(order);
+            stock = builder.buildStockEntity(order);
         }
         stockService.saveStock(stock);
     }

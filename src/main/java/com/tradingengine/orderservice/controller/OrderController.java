@@ -7,6 +7,7 @@ import com.tradingengine.orderservice.exception.order.OrderModificationFailureEx
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.service.OrderService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,10 +16,24 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/order")
 @RequiredArgsConstructor
+@Slf4j
 public class OrderController {
 
+
     private final OrderService orderService;
-    
+
+//    @PostMapping("/{portfolioId}")
+//    public String processingOrder(@PathVariable("portfolioId") UUID portfolioId, @RequestBody OrderRequestToExchange orderRequestToExchange) throws IOException, PortfolioNotFoundException {
+//        return orderService.processAndPlaceOrder(portfolioId, orderRequestToExchange);
+//    }
+
+    @PostMapping("/{portfolioId}")
+    public String placeOrder(@PathVariable("portfolioId") UUID portfolioId,
+
+                             @RequestBody OrderRequestToExchange orderRequestToExchange) throws Exception {
+        log.info("Order Created");
+        return orderService.processAndPlaceOrder(portfolioId, orderRequestToExchange);
+    }
 
     @GetMapping("/getOrder/{orderId}")
     public OrderEntity getOrderById(@PathVariable("orderId") UUID orderId) throws OrderNotFoundException {

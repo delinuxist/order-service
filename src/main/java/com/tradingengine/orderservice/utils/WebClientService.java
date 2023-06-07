@@ -2,8 +2,8 @@ package com.tradingengine.orderservice.utils;
 
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
 import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,19 +12,25 @@ import reactor.core.publisher.Mono;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 @Slf4j
 public class WebClientService {
     private final WebClient webClient;
-    @Value("${exchange.one.url}")
+
+    @Value("${MalOne.url}")
     private String urlOne;
-    @Value("${exchange.two.url}")
+    @Value("${MalTwo.url}")
     private String urlTwo;
 
-    @Value("${exchange.one.apiKey}")
+    @Value("${MalOne.apiKey}")
     private String apiKeyOne;
-    @Value("${exchange.two.apiKey}")
+    @Value("${MalTwo.apiKey}")
     private String apiKeyTwo;
+
+    @Autowired
+    public WebClientService(WebClient webClient) {
+        this.webClient = webClient;
+    }
 
 
     public UUID placeOrderOnExchangeAndGetID(OrderRequestToExchange orderRequestToExchange, String exchangeUrl) {
@@ -40,10 +46,10 @@ public class WebClientService {
     }
 
 
-    //todo: what should fallback value be instead of null?
+    //todo: what should fallback value be instead of null or log?
     public OrderStatusResponseDto checkOrderStatus(UUID orderId, String exchangeUrl) {
         String apiKey = getApiKeyForExchange(exchangeUrl);
-        return webClient.post()
+        return webClient.get()
                 .uri(exchangeUrl + apiKey + "/order/{orderId}")
                 .retrieve()
                 .bodyToMono(OrderStatusResponseDto.class)
@@ -54,7 +60,7 @@ public class WebClientService {
 
     public Boolean modifyOrderById(UUID orderId, OrderRequestToExchange orderRequestToExchange, String exchangeUrl) {
         String apiKey = getApiKeyForExchange(exchangeUrl);
-        return webClient.post()
+        return webClient.put()
                 .uri(exchangeUrl + apiKey + "/order/{orderId}")
                 .body(Mono.just(orderRequestToExchange), orderRequestToExchange.getClass())
                 .retrieve()
@@ -66,7 +72,7 @@ public class WebClientService {
 
     public Boolean cancelOrder(UUID orderId, String exchangeUrl) {
         String apiKey = getApiKeyForExchange(exchangeUrl);
-        return webClient.post()
+        return webClient.get()
                 .uri(exchangeUrl + apiKey + "/order/{orderId}")
                 .retrieve()
                 .bodyToMono(Boolean.class)

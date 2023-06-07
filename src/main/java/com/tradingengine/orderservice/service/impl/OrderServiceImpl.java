@@ -5,27 +5,28 @@ import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.entity.OrderLeg;
 import com.tradingengine.orderservice.entity.PortfolioEntity;
-import com.tradingengine.orderservice.entity.StockEntity;
 import com.tradingengine.orderservice.enums.OrderStatus;
 import com.tradingengine.orderservice.exception.order.OrderModificationFailureException;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
+import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
 import com.tradingengine.orderservice.repository.OrderLegRepository;
 import com.tradingengine.orderservice.repository.OrderRepository;
 import com.tradingengine.orderservice.repository.PortfolioRepository;
 import com.tradingengine.orderservice.service.OrderService;
 import com.tradingengine.orderservice.utils.WebClientService;
-import lombok.RequiredArgsConstructor;
+import com.tradingengine.orderservice.utils.strategy.OrderProcessor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor
+//@RequiredArgsConstructor
 @Slf4j
 
 public class OrderServiceImpl implements OrderService {
@@ -34,10 +35,30 @@ public class OrderServiceImpl implements OrderService {
     private final WebClientService webClientService;
     private final OrderLegRepository orderLegRepository;
     private final PortfolioRepository portfolioRepository;
+    private final OrderProcessor orderProcessor;
+
+    @Autowired
+    public OrderServiceImpl(OrderRepository orderRepository, WebClientService webClientService, OrderLegRepository orderLegRepository, PortfolioRepository portfolioRepository, OrderProcessor orderProcessor) {
+        this.orderRepository = orderRepository;
+        this.webClientService = webClientService;
+        this.orderLegRepository = orderLegRepository;
+        this.portfolioRepository = portfolioRepository;
+        this.orderProcessor = orderProcessor;
+    }
 
     @Override
     public OrderEntity saveOrderEntity(OrderEntity order) {
         return orderRepository.save(order);
+    }
+
+    @Override
+    public String processAndPlaceOrder(UUID portfolioId, OrderRequestToExchange orderRequestToExchange) throws PortfolioNotFoundException, IOException {
+        Optional<PortfolioEntity> portfolio = portfolioRepository.findByPortfolioId(portfolioId);
+        if (portfolio.isEmpty()) {
+            System.out.println("No portfolio with such id");
+        }
+        return orderProcessor.processOrder(orderRequestToExchange, portfolioId, portfolio.get().getUserId());
+
     }
 
     @Override
@@ -123,7 +144,7 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderNotFoundException(orderId);
         }
         if (!order.get().getProduct().equals(orderRequestToExchange.getProduct()) &&
-                !order.get().getOrderSide().equals(orderRequestToExchange.getOrderSide()) &&
+                !order.get().getOrderSide().equals(orderRequestToExchange.getSide()) &&
                 !order.get().getType().equals(orderRequestToExchange.getType())) {
             throw new OrderModificationFailureException();
         }
@@ -165,27 +186,14 @@ public class OrderServiceImpl implements OrderService {
         orderLegRepository.save(orderLeg);
     }
 
-    @Override
-    public String executeOrder(OrderRequestToExchange order, String exchangeUrl) {
-
-        log.info("Executing the order! ********************");
-        String response = (webClientService.placeOrderOnExchangeAndGetID(order, exchangeUrl)).toString();
-        log.info("Order Executed! You will be notified shortly, OrderID is ------>  {}", response);
-        return response;
-    }
-
-    public List<StockEntity> fetchStockByClientIdAndPortfolioId(UUID portfolioId, UUID userId) {
-        List<PortfolioEntity> allPortfolios = portfolioRepository.findAll();
-        List<StockEntity> stockOwnedByPortfolio = new ArrayList<>();
-
-        for (PortfolioEntity portfolioEntity : allPortfolios) {
-            if (portfolioEntity.getPortfolioId().equals(portfolioId) && portfolioEntity.getUserId().equals(userId)) {
-                stockOwnedByPortfolio = portfolioEntity.getStocksOwned();
-            }
-            continue;
-        }
-        return stockOwnedByPortfolio;
-    }
+//    @Override
+//    public String executeOrder(OrderRequestToExchange order, String exchangeUrl) {
+//
+//        log.info("Executing the order! ********************");
+//        String response = (webClientService.placeOrderOnExchangeAndGetID(order, exchangeUrl)).toString();
+//        log.info("Order Executed! You will be notified shortly, OrderID is ------>  {}", response);
+//        return response;
+//    }
 
     //todo: what is this for????
 //    public void TryAnOrder(UUID userId, UUID portfolioId, OrderRequestToExchange orderRequest) throws StockNotAvailable, BuyLimitExceededException, BuyOrderPriceNotReasonable, SellLimitExceededException, InsufficientBalanceException, SellOrderPriceCannotBeMatched, IOException, BuyOrderPriceCannotBeMatched, PortfolioNotFoundException {

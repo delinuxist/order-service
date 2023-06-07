@@ -10,34 +10,32 @@ import com.tradingengine.orderservice.enums.OrderStatus;
 import com.tradingengine.orderservice.enums.OrderType;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
 import com.tradingengine.orderservice.repository.OrderRepository;
-import com.tradingengine.orderservice.repository.PortfolioRepository;
 import com.tradingengine.orderservice.service.PortfolioService;
 import lombok.Builder;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @Builder
+@RequiredArgsConstructor
+@Service
 public class ModelBuilder {
-    static PortfolioRepository portfolioRepository;
-    static PortfolioService portfolioService;
-    static OrderRepository orderRepository;
+    //    static PortfolioRepository portfolioRepository;
+    private final PortfolioService portfolioService;
+    private final OrderRepository orderRepository;
 
-    public static OrderEntity buildOrderEntity(OrderRequestToExchange orderRequestToExchange, UUID portfolioId, UUID userId) throws PortfolioNotFoundException {
+    public OrderEntity buildOrderEntity(OrderRequestToExchange orderRequestToExchange, UUID portfolioId, UUID userId) throws PortfolioNotFoundException {
 
-        Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
-
-        if (portfolio.isEmpty()) {
-            throw new PortfolioNotFoundException(portfolioId);
-        }
+        PortfolioEntity portfolio = portfolioService.fetchPortfolioByPortfolioId(portfolioId);
 
         return OrderEntity.builder()
                 .product(orderRequestToExchange.getProduct())
                 .price(orderRequestToExchange.getPrice())
                 .quantity(orderRequestToExchange.getQuantity())
                 .userId(userId)
-                .orderSide(orderRequestToExchange.getOrderSide())
+                .orderSide(orderRequestToExchange.getSide())
                 .type(orderRequestToExchange.getType())
                 .status(OrderStatus.PENDING)
                 .portfolio(portfolioService.getPortfolioById(portfolioId))
@@ -45,7 +43,7 @@ public class ModelBuilder {
                 .build();
     }
 
-    public static OrderLeg buildOrderLeg(UUID response, String exchangeUrl, OrderEntity orderEntity, Integer quantity) {
+    public OrderLeg buildOrderLeg(UUID response, String exchangeUrl, OrderEntity orderEntity, Integer quantity) {
         return OrderLeg.builder()
                 .Id(response)
                 .product(orderEntity.getProduct())
@@ -59,7 +57,7 @@ public class ModelBuilder {
                 .build();
     }
 
-    public static StockEntity buildStockEntity(OrderEntity order) {
+    public StockEntity buildStockEntity(OrderEntity order) {
         return StockEntity.builder()
                 .portfolio(order.getPortfolio())
                 .price(order.getPrice())
@@ -68,12 +66,12 @@ public class ModelBuilder {
                 .build();
     }
 
-    public static OrderRequestToExchange rebuildOrderRequest(String product, Integer quantity, Double price, OrderSide orderSide, OrderType type) {
+    public OrderRequestToExchange rebuildOrderRequest(String product, Integer quantity, Double price, OrderSide orderSide, OrderType type) {
         return OrderRequestToExchange.builder()
                 .product(product)
                 .quantity(quantity)
                 .price(price)
-                .orderSide(orderSide)
+                .side(orderSide)
                 .type(type)
                 .build();
     }

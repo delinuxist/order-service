@@ -7,12 +7,14 @@ import com.tradingengine.orderservice.entity.OrderLeg;
 import com.tradingengine.orderservice.enums.OrderStatus;
 import com.tradingengine.orderservice.exception.order.OrderModificationFailureException;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
+import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
 public interface OrderService {
-//    OrderEntity processAndPlaceOrder(UUID portfolioId, OrderRequestToExchange orderRequestToExchange) throws PortfolioNotFoundException;
+    String processAndPlaceOrder(UUID portfolioId, OrderRequestToExchange orderRequestToExchange) throws PortfolioNotFoundException, IOException;
 
 
     OrderStatusResponseDto checkOrderStatus(UUID orderID) throws OrderNotFoundException;
@@ -42,7 +44,7 @@ public interface OrderService {
 
     void updateOrderLegStatus(OrderLeg orderLeg, OrderStatus orderStatus);
 
-    String executeOrder(OrderRequestToExchange order, String exchangeUrl);
+//    String executeOrder(OrderRequestToExchange order, String exchangeUrl);
 
 
     List<OrderEntity> fetchCancelledOrders();

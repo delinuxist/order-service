@@ -20,6 +20,7 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     public PortfolioEntity createPortfolio(PortfolioRequestDto portfolioRequestDto) {
         PortfolioEntity portfolio = PortfolioEntity.builder()
+                .portfolioId(UUID.randomUUID())
                 .name(portfolioRequestDto.name()).userId(UUID.randomUUID())
                 .build();
         return portfolioRepository.save(portfolio);
@@ -29,10 +30,18 @@ public class PortfolioServiceImpl implements PortfolioService {
         return portfolioRepository.findAll();
     }
 
-    public PortfolioEntity fetchPortfolioById(UUID portfolioId) throws PortfolioNotFoundException {
-        Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
+    public PortfolioEntity fetchPortfolioByPortfolioId(UUID portfolioId) throws PortfolioNotFoundException {
+        Optional<PortfolioEntity> portfolio = portfolioRepository.findByPortfolioId(portfolioId);
         if (portfolio.isEmpty()) {
             throw new PortfolioNotFoundException(portfolioId);
+        }
+        return portfolio.get();
+    }
+
+    public PortfolioEntity fetchPortfolioByUserId(UUID userId) throws PortfolioNotFoundException {
+        Optional<PortfolioEntity> portfolio = portfolioRepository.findByUserId(userId);
+        if (portfolio.isEmpty()) {
+            throw new PortfolioNotFoundException(userId);
         }
         return portfolio.get();
     }
@@ -52,7 +61,7 @@ public class PortfolioServiceImpl implements PortfolioService {
     public void deletePortfolio(
             UUID portfolioId
     ) throws PortfolioNotFoundException {
-       Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
+        Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
 
         if (portfolio.isEmpty()) {
             // throw exception

@@ -1,8 +1,8 @@
-package com.tradingengine.orderservice.utils.wallet.impl;
+package com.tradingengine.orderservice.service.wallet.impl;
 
 import com.tradingengine.orderservice.entity.Wallet;
 import com.tradingengine.orderservice.repository.WalletRepository;
-import com.tradingengine.orderservice.utils.wallet.WalletService;
+import com.tradingengine.orderservice.service.wallet.WalletService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

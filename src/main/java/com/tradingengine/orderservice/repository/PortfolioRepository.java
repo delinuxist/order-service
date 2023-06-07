@@ -9,7 +9,8 @@ import java.util.UUID;
 
 @Repository
 public interface PortfolioRepository extends JpaRepository<PortfolioEntity, UUID> {
-    Optional<PortfolioEntity> findById(UUID portfolioId);
-    // The function above is redundant because it's already implement by the jpa
+    Optional<PortfolioEntity> findByUserId(UUID userId);
+
+    Optional<PortfolioEntity> findByPortfolioId(UUID portfolioId);
 
 }
