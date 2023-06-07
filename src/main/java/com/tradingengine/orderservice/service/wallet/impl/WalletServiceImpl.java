@@ -16,15 +16,15 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public Optional<Wallet> getWalletByUserId(UUID userId) {
-        return walletRepository.findByClientId(userId);
+        return walletRepository.findByUserId(userId);
     }
 
     @Override
-    public void createWallet(UUID userId) {
+    public Wallet createWallet(UUID userId) {
         Wallet walletEntity = Wallet.builder()
                 .amount(100.0)
-                .clientId(userId)
+                .userId(userId)
                 .build();
-        walletRepository.save(walletEntity);
+        return walletRepository.save(walletEntity);
     }
 }

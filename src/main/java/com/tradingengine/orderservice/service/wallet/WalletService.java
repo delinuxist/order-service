@@ -8,7 +8,7 @@ import java.util.UUID;
 public interface WalletService {
     Optional<Wallet> getWalletByUserId(UUID userId);
 
-    void createWallet(UUID userId);
+    Wallet createWallet(UUID userId);
 
 
 }
