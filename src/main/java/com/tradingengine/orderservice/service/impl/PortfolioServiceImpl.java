@@ -6,6 +6,7 @@ import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundExcep
 import com.tradingengine.orderservice.repository.PortfolioRepository;
 import com.tradingengine.orderservice.service.PortfolioService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,10 +19,13 @@ public class PortfolioServiceImpl implements PortfolioService {
 
     private final PortfolioRepository portfolioRepository;
 
-    public PortfolioEntity createPortfolio(PortfolioRequestDto portfolioRequestDto) {
+    private final SimpMessagingTemplate simpMessagingTemplate;
+
+    public PortfolioEntity createPortfolio(PortfolioRequestDto portfolioRequestDto,String userId) {
         PortfolioEntity portfolio = PortfolioEntity.builder()
-                .name(portfolioRequestDto.name()).clientId(UUID.randomUUID())
+                .name(portfolioRequestDto.name()).clientId(UUID.fromString(userId))
                 .build();
+        simpMessagingTemplate.convertAndSend("/portfolio","sent");
         return portfolioRepository.save(portfolio);
     }
 
@@ -29,12 +33,8 @@ public class PortfolioServiceImpl implements PortfolioService {
         return portfolioRepository.findAll();
     }
 
-    public PortfolioEntity fetchPortfolioById(UUID portfolioId) throws PortfolioNotFoundException {
-        Optional<PortfolioEntity> portfolio = portfolioRepository.findById(portfolioId);
-        if (portfolio.isEmpty()) {
-            throw new PortfolioNotFoundException(portfolioId);
-        }
-        return portfolio.get();
+    public List<PortfolioEntity> fetchPortfoliosByUserId(UUID clientId) {
+       return portfolioRepository.findAllByClientId(clientId);
     }
 
     public PortfolioEntity updatePortfolio(
@@ -46,6 +46,7 @@ public class PortfolioServiceImpl implements PortfolioService {
             throw new PortfolioNotFoundException(portfolioId);
         }
         portfolio.get().setName(portfolioRequestDto.name());
+        simpMessagingTemplate.convertAndSend("/portfolio","sent");
         return portfolioRepository.save(portfolio.get());
     }
 
@@ -60,6 +61,7 @@ public class PortfolioServiceImpl implements PortfolioService {
         }
 
         portfolioRepository.deleteById(portfolioId);
+        simpMessagingTemplate.convertAndSend("/portfolio","sent");
     }
 
     @Override

@@ -1,8 +1,4 @@
 spring:
-  redis:
-    host: localhost
-    port: 6379
-
   rabbitmq:
     host: localhost # RabbitMQ host.
     password: guest
@@ -11,14 +7,13 @@ spring:
 
   application:
     name: order-service
-#  config:
-#    import: optional:configserver:http://localhost:8080
+  config:
+    import: optional:configserver:http://localhost:8081
 
   datasource:
     username: postgres
-    password: password
-    url: jdbc:postgresql://localhost:5532/orderdb
-
+    password: postgres
+    url: jdbc:postgresql://localhost:5432/order_service
   jpa:
     properties:
       hibernate:
@@ -27,6 +22,10 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: 'true'
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
 #  elasticsearch:
 #    uris: https://localhost:8080
@@ -38,8 +37,8 @@ exchange:
   key: 7d21b2cb-9942-4948-9699-1b9fa5a8ad1c
 
 
-server:
-  port: 8080
+#server:
+#  port: 8080
 
 rabbitmq:
   queue:

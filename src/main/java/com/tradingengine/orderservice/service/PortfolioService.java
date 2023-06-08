@@ -11,11 +11,11 @@ import java.util.UUID;
 
 public interface PortfolioService {
 
-    PortfolioEntity createPortfolio(PortfolioRequestDto portfolioRequestDto);
+    PortfolioEntity createPortfolio(PortfolioRequestDto portfolioRequestDto,String userId);
 
     List<PortfolioEntity> fetchAllPortfolios();
 
-    PortfolioEntity fetchPortfolioById(UUID portfolioId) throws PortfolioNotFoundException;
+    List<PortfolioEntity> fetchPortfoliosByUserId(UUID clientId);
 
     PortfolioEntity updatePortfolio(UUID portfolioId,PortfolioRequestDto portfolioRequestDto) throws PortfolioNotFoundException;
 

@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/wallet")
+@RequestMapping("/order/wallet")
 @RequiredArgsConstructor
 public class WalletController {
 
