@@ -2,7 +2,6 @@ package com.tradingengine.orderservice.service;
 
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
 import com.tradingengine.orderservice.dto.OrderResponseDto;
-import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.entity.OrderLeg;
 import com.tradingengine.orderservice.enums.OrderStatus;
@@ -19,21 +18,27 @@ public interface OrderService {
 
     OrderEntity saveOrderEntity(OrderEntity order);
 
-    OrderResponseDto fetchOrderById(UUID orderId);
+    OrderResponseDto getOrderById(UUID orderId);
 
-    List<OrderEntity> fetchAllOrders();
+    List<OrderEntity> getAllOrderEntities();
 
-    List<OrderLeg> fetchAllOrderLegs();
+    List<OrderLeg> getAllOrderLegs();
 
-    List<OrderLeg> fetchAllOpenOrderLegs();
+    List<OrderLeg> getAllOpenOrderLegs();
 
-    List<OrderEntity> fetchAllOpenOrdersForProduct(String product);
+    List<OrderEntity> getAllOpenOrdersForProduct(String product);
 
-    List<OrderEntity> fetchAllOpenOrders();
+    public List<OrderLeg> getAllOpenOrderLegsForAnEntity(UUID orderId);
 
-    Boolean cancelOrder(UUID orderId, String exchangeUrl) throws OrderNotFoundException;
+    public List<OrderLeg> getAllFilledOrderLegsForAnEntity(UUID orderId);
 
-    Boolean modifyOrder(UUID orderId, OrderRequestToExchange orderRequestToExchange, String exchangeUrl) throws OrderNotFoundException, OrderModificationFailureException;
+    public List<OrderLeg> getAllOrderLegsForAnOrderEntity(UUID orderId);
+
+    List<OrderEntity> getAllOpenOrderEntities();
+
+    Boolean cancelOrder(UUID orderId) throws OrderNotFoundException;
+
+    Boolean modifyOrderLeg(UUID orderId, OrderRequestToExchange orderRequestToExchange) throws OrderNotFoundException, OrderModificationFailureException;
 
     //todo? alr
     void updateOrderStatus(OrderEntity order, OrderStatus orderStatus);
@@ -43,7 +48,7 @@ public interface OrderService {
 //    String executeOrder(OrderRequestToExchange order, String exchangeUrl);
 
 
-    List<OrderEntity> fetchCancelledOrders();
+    List<OrderEntity> getAllCancelledOrderEntities();
 
     List<OrderEntity> fetchFilledOrders();
 

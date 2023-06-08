@@ -4,31 +4,38 @@ import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.entity.OrderLeg;
 import com.tradingengine.orderservice.entity.StockEntity;
+import com.tradingengine.orderservice.entity.Wallet;
 import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderStatus;
+import com.tradingengine.orderservice.repository.WalletRepository;
 import com.tradingengine.orderservice.service.OrderService;
 import com.tradingengine.orderservice.service.StockService;
 import com.tradingengine.orderservice.utils.ModelBuilder;
 import com.tradingengine.orderservice.utils.WebClientService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class OrderScheduler {
 
     private final OrderService orderService;
     private final StockService stockService;
     private final WebClientService webClientService;
+    private final WalletRepository walletRepository;
+
     private final ModelBuilder builder;
 
 
     @Scheduled(cron = "*/20 * * * * *")
     private void orderStatusUpdater() {
-        List<OrderEntity> orderEntities = orderService.fetchAllOrders();
+        List<OrderEntity> orderEntities = orderService.getAllOrderEntities();
 
         for (OrderEntity orderEntity : orderEntities) {
             List<OrderLeg> orderLegsOwnedByOrder = orderEntity.getOrderLegsOwnedByEntity();
@@ -61,18 +68,29 @@ public class OrderScheduler {
 
     @Scheduled(cron = "*/20 * * * * *")
     private void orderLegsStatusUpdater() {
-        List<OrderLeg> orderLegs = orderService.fetchAllOpenOrderLegs();
+        List<OrderLeg> orderLegs = orderService.getAllOpenOrderLegs();
 
         orderLegs.forEach(orderLeg -> {
                     if (orderLeg.getOrderLegStatus().equals(OrderStatus.OPEN)) {
                         OrderStatusResponseDto orderStatus = webClientService.checkOrderStatus(orderLeg.getIdFromExchange(), orderLeg.getExchangeUrl());
+                        if (orderStatus.getProduct() != null) {
 
-                        if (orderStatus.getQuantity().equals(orderStatus.getCumulatitiveQuantity())) {
-                            orderService.updateOrderLegStatus(orderLeg, OrderStatus.FILLED);
+                            if (orderStatus.getQuantity().equals(orderStatus.getCumulatitiveQuantity())) {
+                                orderService.updateOrderLegStatus(orderLeg, OrderStatus.FILLED);
 
+                                log.info("order is filled, and of type sell, adding money to user wallet");
+                                if (orderLeg.getOrderSide().equals(OrderSide.SELL)) {
+                                    Optional<Wallet> checkWallet = walletRepository.findByUserId(orderLeg.getOrderEntity().getUserId());
+                                    if (checkWallet.isPresent()) {
+                                        Wallet wallet = checkWallet.get();
+                                        wallet.setAmount(wallet.getAmount() + (orderLeg.getPrice() * orderLeg.getQuantity()));
+                                    }
+                                }
 
-                            createStock(orderLeg.getOrderEntity());
+                                createStock(orderLeg.getOrderEntity());
+                            }
                         }
+
                     }
                 }
         );

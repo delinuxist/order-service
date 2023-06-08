@@ -2,12 +2,10 @@ package com.tradingengine.orderservice.controller;
 
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
 import com.tradingengine.orderservice.dto.OrderResponseDto;
-import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.exception.order.OrderModificationFailureException;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.service.OrderService;
-import com.tradingengine.orderservice.utils.ModelBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -33,22 +31,22 @@ public class OrderController {
 
     @GetMapping("/getOrder/{orderId}")
     public OrderResponseDto getOrderById(@PathVariable("orderId") UUID orderId){
-        return orderService.fetchOrderById(orderId);
+        return orderService.getOrderById(orderId);
     }
 
     @GetMapping("/allOrders")
     public List<OrderEntity> getAllOrders() {
-        return orderService.fetchAllOrders();
+        return orderService.getAllOrderEntities();
     }
 
     @GetMapping("/trades/{product}")
     public List<OrderEntity> getOpenTrades(@PathVariable("product") String product) {
-        return orderService.fetchAllOpenOrdersForProduct(product);
+        return orderService.getAllOpenOrdersForProduct(product);
     }
 
     @DeleteMapping("/{orderId}")
     public Boolean cancelOrder(@PathVariable("orderId") UUID orderId, String exchangeUrl) throws OrderNotFoundException {
-        return orderService.cancelOrder(orderId, exchangeUrl);
+        return orderService.cancelOrder(orderId);
     }
 
     @PutMapping("/{orderId}")
@@ -57,7 +55,7 @@ public class OrderController {
             @RequestBody OrderRequestToExchange orderRequestToExchange,
             String exchangeUrl
     ) throws OrderNotFoundException, OrderModificationFailureException {
-        return orderService.modifyOrder(orderId, orderRequestToExchange, exchangeUrl);
+        return orderService.modifyOrderLeg(orderId, orderRequestToExchange);
     }
 
 

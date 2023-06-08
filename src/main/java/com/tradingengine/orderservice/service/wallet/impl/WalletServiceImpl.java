@@ -22,7 +22,7 @@ public class WalletServiceImpl implements WalletService {
     @Override
     public Wallet createWallet(UUID userId) {
         Wallet walletEntity = Wallet.builder()
-                .amount(100.0)
+                .amount(10000.0)
                 .userId(userId)
                 .build();
         return walletRepository.save(walletEntity);

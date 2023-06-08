@@ -37,7 +37,7 @@ public class OrderEntity {
     private OrderStatus status;
     private String exchangeUrl;
 
-    @ManyToOne(cascade = CascadeType.ALL, optional = false, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.MERGE, optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "portfolio_id", referencedColumnName = "portfolioId")
     private PortfolioEntity portfolio;
 

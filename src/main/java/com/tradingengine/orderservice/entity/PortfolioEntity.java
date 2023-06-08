@@ -21,6 +21,6 @@ public class PortfolioEntity {
     private String name;
     private UUID userId;
 
-    @OneToMany(mappedBy = "portfolio")
+    @OneToMany(mappedBy = "portfolio", fetch = FetchType.EAGER)
     List<StockEntity> stocksOwned;
 }

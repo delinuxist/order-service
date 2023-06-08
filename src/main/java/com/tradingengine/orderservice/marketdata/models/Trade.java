@@ -10,7 +10,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 
-public class Product {
+public class Trade {
     private String product;
     private Integer quantity;
     private Double price;

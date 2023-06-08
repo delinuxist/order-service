@@ -55,7 +55,7 @@ public class WebClientService {
                 .retrieve()
                 .bodyToMono(OrderStatusResponseDto.class)
                 .doOnError(throwable -> log.info("Error when checking order status"))
-                .onErrorReturn(null)
+                .onErrorReturn(new OrderStatusResponseDto())
                 .block();
 
     }

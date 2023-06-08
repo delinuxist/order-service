@@ -12,6 +12,7 @@
 package com.tradingengine.orderservice.utils.strategy;
 
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
+import com.tradingengine.orderservice.dto.OrderResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.entity.OrderLeg;
 import com.tradingengine.orderservice.entity.Wallet;
@@ -19,7 +20,7 @@ import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderStatus;
 import com.tradingengine.orderservice.enums.OrderType;
 import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundException;
-import com.tradingengine.orderservice.marketdata.models.Product;
+import com.tradingengine.orderservice.marketdata.models.Trade;
 import com.tradingengine.orderservice.marketdata.service.MarketDataService;
 import com.tradingengine.orderservice.repository.OrderLegRepository;
 import com.tradingengine.orderservice.repository.OrderRepository;
@@ -38,6 +39,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 
 @Service
@@ -69,9 +71,9 @@ public class OrderProcessor {
 
     public void processOrder(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
         if (orderRequest.getSide().equals(OrderSide.BUY)) {
-             buyOperation(orderRequest, portfolioId, userId);
+            buyOperation(orderRequest, portfolioId, userId);
         }
-         sellOperation(orderRequest, portfolioId, userId);
+        sellOperation(orderRequest, portfolioId, userId);
     }
 
     @Transactional
@@ -79,7 +81,7 @@ public class OrderProcessor {
 
         //gets and stores list of openOrders with the same price as it.
         log.info("Getting products from exchanges and sorting based on type");
-        List<Product> allOpenSellOrders = getOpenOrdersBasedOnType(orderRequest);
+        List<Trade> allOpenSellOrders = getOpenOrdersBasedOnType(orderRequest).toList();
 
         log.info("Saving created order into database");
         OrderEntity orderEntity = builder.buildOrderEntity(orderRequest, portfolioId, userId);
@@ -100,7 +102,7 @@ public class OrderProcessor {
             int orderRequestQuantity = orderRequest.getQuantity();
 
             log.info("open order is not empty! Performing multi-leg split!");
-            for (Product openOrder : allOpenSellOrders) {
+            for (Trade openOrder : allOpenSellOrders) {
 
                 String exchangeUrl = openOrder.getExchangeUrl();
                 int currentOpenOrderQuantity = openOrder.getQuantity();
@@ -132,34 +134,37 @@ public class OrderProcessor {
     }
 
     @Transactional
-    private void sellOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws
+    private void sellOperation(OrderRequestToExchange order, UUID portfolioId, UUID userId) throws
             IOException, PortfolioNotFoundException {
 
         //gets and stores list of openOrders with the same price as it.
         log.info("Getting products from exchanges and sorting based on type");
-        List<Product> allOpenBuyOrders = getOpenOrdersBasedOnType(orderRequest);
+        List<Trade> allOpenBuyOrders = getOpenOrdersBasedOnType(order).toList();
+        allOpenBuyOrders.forEach(System.out::println);
 
         log.info("Saving created order into database");
-        OrderEntity orderEntity = builder.buildOrderEntity(orderRequest, portfolioId, userId);
+        OrderEntity orderEntity = builder.buildOrderEntity(order, portfolioId, userId);
         orderRepository.save(orderEntity);
+        log.info(" Order Successfully Saved");
 
-        setCashBalance(orderRequest, userId);
 
+//        setCashBalance(order, userId);
+        //todo: if order is sell, set cash balance when order is filled
         if (allOpenBuyOrders.isEmpty()) {
             log.info("open order is empty, first to transact! placing order straight to exchange");
-            OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeOne, orderEntity);
+            OrderLeg currentExecutedOrderLeg = executeOrder(order, exchangeOne, orderEntity);
 
             orderEntity.setStatus(OrderStatus.OPEN);
             orderRepository.save(orderEntity);
             log.info("order placed successfully!");
 
         } else {
+            // check for splitting
             int quantitySent = 0;
-            int orderRequestQuantity = orderRequest.getQuantity();
+            int orderRequestQuantity = order.getQuantity();
 
             log.info("open order is not empty! Performing multi-leg split!");
-            for (Product openOrder : allOpenBuyOrders) {
-
+            for (Trade openOrder : allOpenBuyOrders) {
                 String exchangeUrl = openOrder.getExchangeUrl();
                 int currentOpenOrderQuantity = openOrder.getQuantity();
 
@@ -172,16 +177,16 @@ public class OrderProcessor {
                     int quantityToSend = orderRequestQuantity - quantitySent;
 
                     if (currentOpenOrderQuantity > quantityToSend) {
-                        orderRequest.setQuantity(quantityToSend);
+                        order.setQuantity(quantityToSend);
 
                         quantitySent += quantityToSend;
                     } else {
-                        orderRequest.setQuantity(currentOpenOrderQuantity);
+                        order.setQuantity(currentOpenOrderQuantity);
 
                         quantitySent += currentOpenOrderQuantity;
                     }
-                    orderRequest.setPrice(openOrder.getPrice());
-                    OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeUrl, orderEntity);
+                    order.setPrice(openOrder.getPrice());
+                    OrderLeg currentExecutedOrderLeg = executeOrder(order, exchangeUrl, orderEntity);
                     log.info("multi-leg order placed!");
                 }
             }
@@ -190,23 +195,51 @@ public class OrderProcessor {
     }
 
     // frequently used methods
-    public List<Product> getOpenOrdersBasedOnType(OrderRequestToExchange orderRequest) throws IOException {
-        List<Product> allOpenSellOrders;
-        String side = orderRequest.getSide().name();
-
-        //if order is a limit buy order, get only open orders that match its price
-        if (orderRequest.getType().equals(OrderType.LIMIT)) {
-            allOpenSellOrders = marketDataService.findOrders(orderRequest.getProduct())
-                    .stream()
-                    .filter(product -> product.getPrice().equals(orderRequest.getPrice())).toList();
-        } else {
-            //get and sort open orders (market orders match only to limit orders)
-            allOpenSellOrders = marketDataService.findOrders(orderRequest.getProduct())
-                    .stream()
-                    .filter(product -> product.getOrderType().equals(OrderType.LIMIT))
-                    .sorted(Comparator.comparingDouble(Product::getPrice)).toList();
+    public Stream<Trade> getOpenOrdersBasedOnType(OrderRequestToExchange order) throws IOException {
+        List<Trade> allOpenSellOrders;
+        if (order.getSide() == OrderSide.BUY) {
+            if (order.getType() == OrderType.LIMIT) {
+                return getBuyLimitTrades(order).sorted(Comparator.comparing(Trade::getPrice));
+            } else return getBuyMarketTrades(order).sorted(Comparator.comparing(Trade::getPrice));
         }
-        return allOpenSellOrders;
+//
+        if (order.getSide() == OrderSide.SELL) {
+            if (order.getType() == OrderType.LIMIT) {
+                return getSellLimitTrades(order).sorted(Comparator.comparing(Trade::getPrice).reversed());
+            } else return getSellMarketTrades(order).sorted(Comparator.comparing(Trade::getPrice).reversed());
+        }
+
+        return null;
+    }
+
+    public Stream<Trade> getBuyLimitTrades(OrderRequestToExchange order) throws IOException {
+        log.info("Getting BuyLimit Orders");
+        return marketDataService.findOpenTrades(order.getProduct()
+                        , OrderSide.SELL.name())
+                .filter(trade -> trade.getOrderType().equals(OrderType.MARKET) ||
+                        trade.getPrice().equals(order.getPrice()));
+    }
+
+    public Stream<Trade> getBuyMarketTrades(OrderRequestToExchange order) throws IOException {
+        log.info("Getting BuyMarket Orders");
+        return marketDataService.findOpenTrades(order.getProduct()
+                        , OrderSide.SELL.name())
+                .filter(trade -> trade.getOrderType().equals(OrderType.LIMIT));
+    }
+
+    public Stream<Trade> getSellLimitTrades(OrderRequestToExchange order) throws IOException {
+        log.info("Getting SellLimit Orders");
+        return marketDataService.findOpenTrades(order.getProduct()
+                        , OrderSide.BUY.name())
+                .filter(trade -> trade.getOrderType().equals(OrderType.MARKET) ||
+                        trade.getPrice().equals(order.getPrice()));
+    }
+
+    public Stream<Trade> getSellMarketTrades(OrderRequestToExchange order) throws IOException {
+        log.info("Getting SellLimit Orders");
+        return marketDataService.findOpenTrades(order.getProduct()
+                        , OrderSide.BUY.name())
+                .filter(trade -> trade.getOrderType().equals(OrderType.LIMIT));
     }
 
     public OrderLeg executeOrder(OrderRequestToExchange orderRequest, String exchangeUrl, OrderEntity order) {
@@ -215,7 +248,7 @@ public class OrderProcessor {
         String orderIdFromExchange = webClientService.placeOrderOnExchangeAndGetID(orderRequest, exchangeUrl);
 
         OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeOne, order, orderRequest.getQuantity());
-        if(orderIdFromExchange.equals("")){
+        if (orderIdFromExchange.equals("")) {
             currentExecutedOrderLeg.setOrderLegStatus(OrderStatus.FAILED);
         } else {
             currentExecutedOrderLeg.setOrderLegStatus(OrderStatus.OPEN);
@@ -229,18 +262,18 @@ public class OrderProcessor {
     }
 
 
-    public void setCashBalance(OrderRequestToExchange orderRequest, UUID userId){
+    public void setCashBalance(OrderRequestToExchange orderRequest, UUID userId) {
         Optional<Wallet> checkWallet = walletRepository.findByUserId(userId);
-        if(checkWallet.isPresent()){
+        if (checkWallet.isPresent()) {
             Wallet wallet = checkWallet.get();
-            if(orderRequest.getSide().equals(OrderSide.BUY)) {
+            if (orderRequest.getSide().equals(OrderSide.BUY)) {
                 wallet.setAmount(wallet.getAmount() - (orderRequest.getPrice() * orderRequest.getQuantity()));
             } else {
-                wallet.setAmount(wallet.getAmount() + (orderRequest.getPrice() * orderRequest.getQuantity()) );
+                wallet.setAmount(wallet.getAmount() + (orderRequest.getPrice() * orderRequest.getQuantity()));
             }
             walletRepository.save(wallet);
         }
-
     }
 
 }
+
