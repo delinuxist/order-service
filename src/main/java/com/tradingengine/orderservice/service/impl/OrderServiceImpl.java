@@ -87,6 +87,8 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findAll().stream().filter(order -> order.getStatus().equals(OrderStatus.OPEN)).toList();
     }
 
+
+    //todo: call new cancellation methods (wallet & stock) here in the right places
     public Boolean cancelOrder(UUID orderId, String exchangeUrl) throws OrderNotFoundException {
 
         Optional<OrderEntity> order = orderRepository.findById(orderId);
@@ -104,23 +106,26 @@ public class OrderServiceImpl implements OrderService {
 
         for (OrderLeg orderLeg : orderLegsOwnedByOrderEntity) {
 
-            if(!orderLeg.getOrderLegStatus().equals(OrderStatus.FILLED)) {
-                Boolean result = webClientService.cancelOrder(orderLeg.getIdFromExchange(), orderLeg.getExchangeUrl());
-
-                if (result) {
-                    orderLeg.setOrderLegStatus(OrderStatus.CANCELLED);
-                    orderLegRepository.save(orderLeg);
-
-                    order.get().setUpdatedAt(LocalDateTime.now());
-                    orderRepository.save(order.get());
-                }
+            if (orderLeg.getOrderLegStatus().equals(OrderStatus.FILLED)) {
+                //todo: split
+                updateAccountAfterCancellation(order.get(), orderLeg);
             }
-            updateAccountAfterCancellation(order.get(), orderLeg);
+            Boolean result = webClientService.cancelOrder(orderLeg.getIdFromExchange(), orderLeg.getExchangeUrl());
+
+            if (result) {
+                orderLeg.setOrderLegStatus(OrderStatus.CANCELLED);
+                orderLegRepository.save(orderLeg);
+
+                order.get().setUpdatedAt(LocalDateTime.now());
+                orderRepository.save(order.get());
+            }
         }
+        Double totalToRefundOrTakeBack = order.get().getQuantity() * order.get().getPrice();
+        //todo: updateWalletAfterCancellation
         return true;
     }
 
-
+    //todo: separate this method to: updateWalletAfterCancellation & updateStockAfterCancellation
     public void updateAccountAfterCancellation(OrderEntity order, OrderLeg orderLeg) {
 
 
@@ -148,8 +153,6 @@ public class OrderServiceImpl implements OrderService {
             stockService.saveStock(stock);
         }
     }
-
-
 
 
 

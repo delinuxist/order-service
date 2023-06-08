@@ -209,12 +209,12 @@ public class OrderProcessor {
         return allOpenSellOrders;
     }
 
-    public OrderLeg executeOrder(OrderRequestToExchange orderRequest, String exchangeUrl, OrderEntity orderEntity) {
+    public OrderLeg executeOrder(OrderRequestToExchange orderRequest, String exchangeUrl, OrderEntity order) {
 
         log.info("Executing the order! ********************");
         String orderIdFromExchange = webClientService.placeOrderOnExchangeAndGetID(orderRequest, exchangeUrl);
 
-        OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
+        OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeOne, order, orderRequest.getQuantity());
         if(orderIdFromExchange.equals("")){
             currentExecutedOrderLeg.setOrderLegStatus(OrderStatus.FAILED);
         } else {
