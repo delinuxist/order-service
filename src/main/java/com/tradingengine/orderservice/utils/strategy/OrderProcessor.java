@@ -14,6 +14,7 @@ package com.tradingengine.orderservice.utils.strategy;
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.entity.OrderLeg;
+import com.tradingengine.orderservice.entity.Wallet;
 import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderStatus;
 import com.tradingengine.orderservice.enums.OrderType;
@@ -22,6 +23,8 @@ import com.tradingengine.orderservice.marketdata.models.Product;
 import com.tradingengine.orderservice.marketdata.service.MarketDataService;
 import com.tradingengine.orderservice.repository.OrderLegRepository;
 import com.tradingengine.orderservice.repository.OrderRepository;
+import com.tradingengine.orderservice.repository.StockRepository;
+import com.tradingengine.orderservice.repository.WalletRepository;
 import com.tradingengine.orderservice.utils.ModelBuilder;
 import com.tradingengine.orderservice.utils.WebClientService;
 import jakarta.transaction.Transactional;
@@ -33,6 +36,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -45,29 +49,33 @@ public class OrderProcessor {
     private final OrderLegRepository orderLegRepository;
     private final WebClientService webClientService;
     private final ModelBuilder builder;
+    private final WalletRepository walletRepository;
+    private final StockRepository stockRepository;
 
     @Value("${MalOne.url}")
     private String exchangeOne;
 
     //constructor
     @Autowired
-    public OrderProcessor(MarketDataService marketDataService, OrderRepository orderRepository, OrderLegRepository orderLegRepository, WebClientService webClientService, ModelBuilder builder) {
+    public OrderProcessor(MarketDataService marketDataService, OrderRepository orderRepository, OrderLegRepository orderLegRepository, WebClientService webClientService, ModelBuilder builder, WalletRepository walletRepository, StockRepository stockRepository) {
         this.marketDataService = marketDataService;
         this.webClientService = webClientService;
         this.orderRepository = orderRepository;
         this.orderLegRepository = orderLegRepository;
         this.builder = builder;
+        this.walletRepository = walletRepository;
+        this.stockRepository = stockRepository;
     }
 
-    public String processOrder(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
+    public void processOrder(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
         if (orderRequest.getSide().equals(OrderSide.BUY)) {
-            return buyOperation(orderRequest, portfolioId, userId);
+             buyOperation(orderRequest, portfolioId, userId);
         }
-        return sellOperation(orderRequest, portfolioId, userId);
+         sellOperation(orderRequest, portfolioId, userId);
     }
 
     @Transactional
-    private String buyOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
+    private void buyOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws IOException, PortfolioNotFoundException {
 
         //gets and stores list of openOrders with the same price as it.
         log.info("Getting products from exchanges and sorting based on type");
@@ -77,11 +85,11 @@ public class OrderProcessor {
         OrderEntity orderEntity = builder.buildOrderEntity(orderRequest, portfolioId, userId);
         orderRepository.save(orderEntity);
 
+        setCashBalance(orderRequest, userId);
+
         if (allOpenSellOrders.isEmpty()) {
-            log.info("open order is empty, placing order straight to exchange");
-            //place order on exchange directly without splitting (since you're first one to transact)
+            log.info("open order is empty, first to transact! placing order straight to exchange");
             OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeOne, orderEntity);
-            orderLegRepository.save(currentExecutedOrderLeg);
 
             orderEntity.setStatus(OrderStatus.OPEN);
             orderRepository.save(orderEntity);
@@ -106,68 +114,50 @@ public class OrderProcessor {
                     int quantityToSend = orderRequestQuantity - quantitySent;
 
                     if (currentOpenOrderQuantity > quantityToSend) {
-                        // todo: reduce cash balance in wallet (check calculation sample below)
-
-                        //todo: why change orderRequest.getPrice() to openOrder.getPrice() ?
-                        //in case the price of the open order is lower than the price of the order request, place cheaper price, get profit
                         orderRequest.setQuantity(quantityToSend);
-                        orderRequest.setPrice(openOrder.getPrice());
-
-                        //execute order, get order leg
-                        OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeUrl, orderEntity);
-                        orderLegRepository.save(currentExecutedOrderLeg);
-                        log.info("multi-leg order placed!");
 
                         quantitySent += quantityToSend;
                     } else {
-                        // todo: reduce cash balance in wallet (check calculation sample below)
-
-                        //if currentOpenOrderQuantity is less than the quantity we want to send
-                        //we make a request to send the qty of the currentOpenOrderQuantity rather to the exchange
-                        //then loop over again to send the rest of the qty order request
                         orderRequest.setQuantity(currentOpenOrderQuantity);
-                        orderRequest.setPrice(openOrder.getPrice());
-
-                        log.info("order qty is less than open order qty. placing trade....");
-                        OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeUrl, orderEntity);
-                        orderLegRepository.save(currentExecutedOrderLeg);
-                        log.info("order has been placed successfully!");
-
 
                         quantitySent += currentOpenOrderQuantity;
                     }
+                    orderRequest.setPrice(openOrder.getPrice());
+                    OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeUrl, orderEntity);
+                    log.info("multi-leg order placed!");
                 }
             }
         }
-        return "Order Processed. Order id is:" + orderEntity.getId();
+        log.info("order has been placed successfully!");
     }
 
     @Transactional
-    private String sellOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws
+    private void sellOperation(OrderRequestToExchange orderRequest, UUID portfolioId, UUID userId) throws
             IOException, PortfolioNotFoundException {
 
-        //extract fields from order request and build the order
+        //gets and stores list of openOrders with the same price as it.
+        log.info("Getting products from exchanges and sorting based on type");
+        List<Product> allOpenBuyOrders = getOpenOrdersBasedOnType(orderRequest);
+
         log.info("Saving created order into database");
         OrderEntity orderEntity = builder.buildOrderEntity(orderRequest, portfolioId, userId);
         orderRepository.save(orderEntity);
-        log.info("Order saved in database with a pending flag!");
 
-        //todo: check orderservice note in trading engine folder
-
-        log.info("Finding and Comparing order to various orders on exchange");
-        log.info("Available open trades are .....................");
-        List<Product> allOpenBuyOrders = getOpenOrdersBasedOnType(orderRequest);
+        setCashBalance(orderRequest, userId);
 
         if (allOpenBuyOrders.isEmpty()) {
-            //place order on exchange directly without splitting (since you're first one to transact)
+            log.info("open order is empty, first to transact! placing order straight to exchange");
             OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeOne, orderEntity);
-            orderLegRepository.save(currentExecutedOrderLeg);
 
+            orderEntity.setStatus(OrderStatus.OPEN);
+            orderRepository.save(orderEntity);
+            log.info("order placed successfully!");
 
         } else {
             int quantitySent = 0;
             int orderRequestQuantity = orderRequest.getQuantity();
 
+            log.info("open order is not empty! Performing multi-leg split!");
             for (Product openOrder : allOpenBuyOrders) {
 
                 String exchangeUrl = openOrder.getExchangeUrl();
@@ -182,36 +172,21 @@ public class OrderProcessor {
                     int quantityToSend = orderRequestQuantity - quantitySent;
 
                     if (currentOpenOrderQuantity > quantityToSend) {
-                        // todo: reduce cash balance in wallet (check calculation sample below)
-
-                        //todo: why change orderRequest.getPrice() to openOrder.getPrice() ?
-                        //in case the price of the open order is lower than the price of the order request, place cheaper price, get profit
                         orderRequest.setQuantity(quantityToSend);
-                        orderRequest.setPrice(openOrder.getPrice());
-
-                        OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeUrl, orderEntity);
-                        orderLegRepository.save(currentExecutedOrderLeg);
-
 
                         quantitySent += quantityToSend;
                     } else {
-                        // todo: reduce cash balance in wallet (check calculation sample below)
-
-                        //if currentOpenOrderQuantity is less than the quantity we want to send
-                        //we make a request to send the qty of the currentOpenOrderQuantity rather to the exchange
-                        //then loop over again to send the rest of the qty order request
                         orderRequest.setQuantity(currentOpenOrderQuantity);
-                        orderRequest.setPrice(openOrder.getPrice());
-
-                        OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeUrl, orderEntity);
-                        orderLegRepository.save(currentExecutedOrderLeg);
 
                         quantitySent += currentOpenOrderQuantity;
                     }
+                    orderRequest.setPrice(openOrder.getPrice());
+                    OrderLeg currentExecutedOrderLeg = executeOrder(orderRequest, exchangeUrl, orderEntity);
+                    log.info("multi-leg order placed!");
                 }
             }
         }
-        return "Order Processed. Order id is:" + orderEntity.getId();
+        log.info("order has been placed successfully!");
     }
 
     // frequently used methods
@@ -234,20 +209,17 @@ public class OrderProcessor {
         return allOpenSellOrders;
     }
 
-
     public OrderLeg executeOrder(OrderRequestToExchange orderRequest, String exchangeUrl, OrderEntity orderEntity) {
 
         log.info("Executing the order! ********************");
         String orderIdFromExchange = webClientService.placeOrderOnExchangeAndGetID(orderRequest, exchangeUrl);
 
-        OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(null, exchangeOne, orderEntity, orderRequest.getQuantity());
+        OrderLeg currentExecutedOrderLeg = builder.buildOrderLeg(orderIdFromExchange, exchangeOne, orderEntity, orderRequest.getQuantity());
         if(orderIdFromExchange.equals("")){
             currentExecutedOrderLeg.setOrderLegStatus(OrderStatus.FAILED);
-
         } else {
             currentExecutedOrderLeg.setOrderLegStatus(OrderStatus.OPEN);
         }
-        currentExecutedOrderLeg.setId(orderIdFromExchange);
         log.info("**************************** {}", currentExecutedOrderLeg);
         orderLegRepository.save(currentExecutedOrderLeg);
 
@@ -257,25 +229,18 @@ public class OrderProcessor {
     }
 
 
+    public void setCashBalance(OrderRequestToExchange orderRequest, UUID userId){
+        Optional<Wallet> checkWallet = walletRepository.findByUserId(userId);
+        if(checkWallet.isPresent()){
+            Wallet wallet = checkWallet.get();
+            if(orderRequest.getSide().equals(OrderSide.BUY)) {
+                wallet.setAmount(wallet.getAmount() - (orderRequest.getPrice() * orderRequest.getQuantity()));
+            } else {
+                wallet.setAmount(wallet.getAmount() + (orderRequest.getPrice() * orderRequest.getQuantity()) );
+            }
+            walletRepository.save(wallet);
+        }
 
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-// todo: reduce cash balance in wallet (sample)
-/*
-if quantitySent < orderRequestQuantity:
-wallet = updateBalanceOfClientWallet(wallet, (quantityToSend + currentOpenOrderQuantity);
-else:
-wallet = updateBalanceOfClientWallet(wallet, currentOpenOrderQuantity);
-*/
 }

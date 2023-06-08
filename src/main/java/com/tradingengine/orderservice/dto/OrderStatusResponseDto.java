@@ -17,7 +17,7 @@ public class OrderStatusResponseDto {
 
     Double price;
 
-    UUID orderID;
+    UUID orderIdFromExchange;
 
     OrderSide orderSide;
 

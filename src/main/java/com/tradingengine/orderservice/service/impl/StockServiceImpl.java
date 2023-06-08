@@ -22,11 +22,11 @@ public class StockServiceImpl implements StockService {
 
     public List<StockEntity> fetchAllStocksByPortfolioIdAndTicker(UUID portfolioId, String ticker) {
         PortfolioEntity portfolio = (portfolioRepository.findById(portfolioId)).orElseThrow();
-        return stockRepository.findAllStocksByPortfolioAndTicker(portfolio, ticker);
+        return stockRepository.findAllByPortfolioAndTicker(portfolio, ticker);
     }
 
-    public StockEntity fetchStockByPortfolioAndTicker(PortfolioEntity portfolio, String ticker) {
-        Optional<StockEntity> stock = stockRepository.findStockEntityByPortfolioAndTicker(portfolio, ticker);
+    public StockEntity findByPortfolioAndTickerAndUserId(PortfolioEntity portfolio, String ticker, UUID userId) {
+        Optional<StockEntity> stock = stockRepository.findByPortfolioAndTickerAndUserId(portfolio, ticker, userId);
         return stock.orElse(null);
     }
 
@@ -40,22 +40,10 @@ public class StockServiceImpl implements StockService {
     }
 
     public StockEntity fetchStockByPortFolioAndTicker(PortfolioEntity portfolio, String ticker) {
-        Optional<StockEntity> stock = stockRepository.findStockByPortfolioAndTicker(portfolio, ticker);
+        Optional<StockEntity> stock = stockRepository.findByPortfolioAndTicker(portfolio, ticker);
         return stock.orElse(null);
     }
 
-//    public List<StockEntity> fetchStockByClientIdAndPortfolioId(UUID portfolioId, UUID userId) {
-//        List<PortfolioEntity> allPortfolios = portfolioRepository.findAll();
-//        List<StockEntity> stockOwnedByPortfolio = new ArrayList<>();
-//
-//        for (PortfolioEntity portfolioEntity : allPortfolios) {
-//            if (portfolioEntity.getPortfolioId().equals(portfolioId) && portfolioEntity.getUserId().equals(userId)) {
-//                stockOwnedByPortfolio = portfolioEntity.getStocksOwned();
-//            }
-//            continue;
-//        }
-//        return stockOwnedByPortfolio;
-//    }
 
     @Override
     public void saveStock(StockEntity stock) {

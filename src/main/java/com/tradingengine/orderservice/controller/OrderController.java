@@ -1,11 +1,13 @@
 package com.tradingengine.orderservice.controller;
 
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
+import com.tradingengine.orderservice.dto.OrderResponseDto;
 import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.exception.order.OrderModificationFailureException;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
 import com.tradingengine.orderservice.service.OrderService;
+import com.tradingengine.orderservice.utils.ModelBuilder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -23,21 +25,15 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/{portfolioId}")
-    public String placeOrder(@PathVariable("portfolioId") UUID portfolioId,
-
+    public void placeOrder(@PathVariable("portfolioId") UUID portfolioId,
                              @RequestBody OrderRequestToExchange orderRequestToExchange) throws Exception {
         log.info("Order Created");
-        return orderService.processAndPlaceOrder(portfolioId, orderRequestToExchange);
+        orderService.processAndPlaceOrder(portfolioId, orderRequestToExchange);
     }
 
     @GetMapping("/getOrder/{orderId}")
-    public OrderEntity getOrderById(@PathVariable("orderId") UUID orderId) throws OrderNotFoundException {
+    public OrderResponseDto getOrderById(@PathVariable("orderId") UUID orderId){
         return orderService.fetchOrderById(orderId);
-    }
-
-    @GetMapping("/checkStatus/{orderId}")
-    public OrderStatusResponseDto checkOrderStatus(@PathVariable("orderId") UUID orderId) throws OrderNotFoundException {
-        return orderService.checkOrderStatus(orderId);
     }
 
     @GetMapping("/allOrders")
@@ -63,13 +59,6 @@ public class OrderController {
     ) throws OrderNotFoundException, OrderModificationFailureException {
         return orderService.modifyOrder(orderId, orderRequestToExchange, exchangeUrl);
     }
-
-
-//    @PostMapping("/{userId}/{portfolioId}")
-//    public void createAnOrder(@PathVariable("portfolioId") UUID portfolioId, @PathVariable("userId") UUID userId,
-//                              @Validated @RequestBody OrderRequestToExchange orderRequestToExchange) throws Exception {
-//        orderService.TryAnOrder(userId, portfolioId, orderRequestToExchange);
-//    }
 
 
 }

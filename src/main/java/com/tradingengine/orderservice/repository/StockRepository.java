@@ -12,19 +12,12 @@ import java.util.UUID;
 @Repository
 public interface StockRepository extends JpaRepository<StockEntity, UUID> {
 
-    Optional<StockEntity> findStockEntityByPortfolioAndTicker(PortfolioEntity portfolio, String ticker);
+    List<StockEntity> findAllByPortfolioAndTicker(PortfolioEntity portfolio, String Ticker);
+    Optional<StockEntity> findByPortfolioAndUserId(PortfolioEntity portfolio, String Ticker);
+    List<StockEntity> findAllByUserId(UUID userId);
+    Optional<StockEntity> findByPortfolioAndTickerAndUserId(PortfolioEntity portfolio, String ticker, UUID userId);
 
-    List<StockEntity> findAllStocksByPortfolioAndTicker(PortfolioEntity portfolio, String Ticker);
-
-    Optional<StockEntity> findStocksByPortfolioAndUserId(PortfolioEntity portfolio, String Ticker);
-
-    List<StockEntity> findAllStocksByUserId(UUID userId);
-
-    Optional<StockEntity> findStockByPortfolioAndTicker(PortfolioEntity portfolio, String Ticker);
-
-
-//    Optional<StockEntity> findStockEntityByPortfolio_ClientIdAndTicker(UUID portfolioId, String ticker);
-//    List<StockEntity> findStockEntityByClientId(UUID clientId);
+    Optional<StockEntity> findByPortfolioAndTicker(PortfolioEntity portfolio, String Ticker);
 
 
 }

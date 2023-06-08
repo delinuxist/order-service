@@ -8,6 +8,7 @@ import com.tradingengine.orderservice.utils.ModelBuilder;
 import com.tradingengine.orderservice.utils.WebClientService;
 import com.tradingengine.orderservice.utils.strategy.OrderProcessor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FailedOrdersProcessor {
     private final OrderService orderService;
     private final OrderProcessor orderProcessor;
@@ -31,6 +33,8 @@ public class FailedOrdersProcessor {
 
         for (OrderLeg order : orderLegList) {
             OrderRequestToExchange orderRequest = builder.rebuildOrderRequest(order.getProduct(), order.getQuantity(), order.getPrice(), order.getOrderSide(), order.getType());
+            log.info("{}", orderRequest);
+            log.info("{}", order.getExchangeUrl());
             String response = webClientService.placeOrderOnExchangeAndGetID(orderRequest, order.getExchangeUrl());
 
             OrderStatus orderStatus = response.equals("") ? OrderStatus.FAILED : OrderStatus.OPEN;

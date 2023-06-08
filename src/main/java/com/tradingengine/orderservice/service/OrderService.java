@@ -1,6 +1,7 @@
 package com.tradingengine.orderservice.service;
 
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
+import com.tradingengine.orderservice.dto.OrderResponseDto;
 import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.entity.OrderLeg;
@@ -14,16 +15,11 @@ import java.util.List;
 import java.util.UUID;
 
 public interface OrderService {
-    String processAndPlaceOrder(UUID portfolioId, OrderRequestToExchange orderRequestToExchange) throws PortfolioNotFoundException, IOException;
-
-
-    OrderStatusResponseDto checkOrderStatus(UUID orderID) throws OrderNotFoundException;
-
-    OrderStatusResponseDto checkOrderLegStatus(UUID orderId) throws OrderNotFoundException;
+    void processAndPlaceOrder(UUID portfolioId, OrderRequestToExchange orderRequestToExchange) throws PortfolioNotFoundException, IOException;
 
     OrderEntity saveOrderEntity(OrderEntity order);
 
-    OrderEntity fetchOrderById(UUID orderId) throws OrderNotFoundException;
+    OrderResponseDto fetchOrderById(UUID orderId);
 
     List<OrderEntity> fetchAllOrders();
 

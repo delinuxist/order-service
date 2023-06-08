@@ -1,0 +1,42 @@
+services:
+  db:
+    container_name: postgres-db2
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - /var/lib/postgres
+    ports:
+      - "5732:5432"
+    networks:
+      - db
+
+#  elasticsearch:
+#    image: docker.elastic.co/elasticsearch/elasticsearch:8.7.1
+#    container_name: elasticsearch
+#    volumes:
+#      - elasticsearch-data:/usr/share/elasticsearch/newdata
+#    ports:
+#      - 9200:9200
+#    environment:
+#      - ELASTIC_USERNAME=elastic
+#
+#      - ELASTIC_PASSWORD=changeme
+#      - xpack.security.enabled=false
+#      - discovery.type=single-node
+#    ulimits:
+#      memlock:
+#        soft: -1
+#        hard: -1
+
+
+networks:
+  db:
+    driver: bridge
+
+volumes:
+  db:
+  elasticsearch-data:
+    driver: local

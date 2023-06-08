@@ -34,27 +34,30 @@ public class WebClientService {
 
     public String placeOrderOnExchangeAndGetID(OrderRequestToExchange orderRequestToExchange, String exchangeUrl) {
         String apiKey = getApiKeyForExchange(exchangeUrl);
-        log.info("Order to be sent    {}", orderRequestToExchange);
         return webClient.post()
                 .uri(exchangeUrl + apiKey + "/order")
                 .body(Mono.just(orderRequestToExchange), OrderRequestToExchange.class)
                 .retrieve()
                 .bodyToMono(String.class)
+                .map(response -> response.replaceAll("\"", ""))
                 .doOnError(throwable -> log.info("Error occurred during executing order "))
                 .onErrorReturn("")
                 .block();
     }
 
 
-    //todo: what should fallback value be instead of null or log?
+    //todo: should return just the status of the order? save orderStatus response dto to db?
     public OrderStatusResponseDto checkOrderStatus(String orderId, String exchangeUrl) {
         String apiKey = getApiKeyForExchange(exchangeUrl);
-        return webClient.get()
-                .uri(exchangeUrl + apiKey + "/order/{orderId}")
+        log.info("{}", apiKey);
+               return webClient.get()
+                .uri(exchangeUrl + apiKey + "/order/" + orderId.replaceAll("\"", ""))
                 .retrieve()
                 .bodyToMono(OrderStatusResponseDto.class)
                 .doOnError(throwable -> log.info("Error when checking order status"))
+                .onErrorReturn(null)
                 .block();
+
     }
 
 
@@ -62,7 +65,7 @@ public class WebClientService {
         String apiKey = getApiKeyForExchange(exchangeUrl);
         log.info("Order to be sent    {}", orderRequestToExchange);
         return webClient.put()
-                .uri(exchangeUrl + apiKey + "/order/{orderId}")
+                .uri(exchangeUrl + apiKey + "/order/" + orderId)
                 .body(Mono.just(orderRequestToExchange), OrderRequestToExchange.class)
                 .retrieve()
                 .bodyToMono(Boolean.class)
@@ -72,24 +75,23 @@ public class WebClientService {
     }
 
 
-    public Boolean cancelOrder(UUID orderId, String exchangeUrl) {
+    public Boolean cancelOrder(String orderId, String exchangeUrl) {
         String apiKey = getApiKeyForExchange(exchangeUrl);
         return webClient.get()
-                .uri(exchangeUrl + apiKey + "/order/{orderId}")
+                .uri(exchangeUrl + apiKey + "/order/" + orderId)
                 .retrieve()
                 .bodyToMono(Boolean.class)
-                .doOnError(throwable -> log.info("Error occurred during order update"))
+                .doOnError(throwable -> log.info("Error occurred during order cancellation"))
                 .onErrorReturn(false).block();
 
     }
 
     //get api key for each exchange
     private String getApiKeyForExchange(String exchangeUrl) {
-        String apiKey;
         if (exchangeUrl.equals(urlOne)) {
-            return apiKey = apiKeyOne;
+            return apiKeyOne;
         } else {
-            return apiKey = apiKeyTwo;
+            return apiKeyTwo;
         }
     }
 }

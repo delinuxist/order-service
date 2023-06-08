@@ -1,6 +1,8 @@
 package com.tradingengine.orderservice.utils;
 
+import com.tradingengine.orderservice.dto.OrderLegResponseDto;
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
+import com.tradingengine.orderservice.dto.OrderResponseDto;
 import com.tradingengine.orderservice.entity.OrderEntity;
 import com.tradingengine.orderservice.entity.OrderLeg;
 import com.tradingengine.orderservice.entity.PortfolioEntity;
@@ -16,7 +18,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Builder
 @RequiredArgsConstructor
@@ -44,8 +48,9 @@ public class ModelBuilder {
     }
 
     public OrderLeg buildOrderLeg(String response, String exchangeUrl, OrderEntity orderEntity, Integer quantity) {
+
         return OrderLeg.builder()
-                .Id(response)
+                .IdFromExchange(response.isEmpty() ? null:response)
                 .product(orderEntity.getProduct())
                 .price(orderEntity.getPrice())
                 .quantity(quantity)
@@ -73,6 +78,37 @@ public class ModelBuilder {
                 .price(price)
                 .side(orderSide)
                 .type(type)
+                .build();
+    }
+
+    public OrderLegResponseDto buildOrderLegResponse(OrderLeg orderLeg){
+        return OrderLegResponseDto.builder()
+                .orderLegId(orderLeg.getOrderLegId())
+                .IdFromExchange(orderLeg.getIdFromExchange())
+                .product(orderLeg.getProduct())
+                .price(orderLeg.getPrice())
+                .quantity(orderLeg.getQuantity())
+                .orderSide(orderLeg.getOrderSide())
+                .orderLegStatus(orderLeg.getOrderLegStatus())
+                .type(orderLeg.getType())
+                .exchangeUrl(orderLeg.getExchangeUrl())
+                .build();
+    }
+
+
+    public OrderResponseDto buildOrderResponse(OrderEntity orderEntity){
+        List<OrderLegResponseDto> orderLegResponseDtos = orderEntity.getOrderLegsOwnedByEntity().stream().map(this::buildOrderLegResponse).collect(Collectors.toList());
+        return OrderResponseDto.builder()
+                .id(orderEntity.getId())
+                .product(orderEntity.getProduct())
+                .price(orderEntity.getPrice())
+                .quantity(orderEntity.getQuantity())
+                .orderSide(orderEntity.getOrderSide())
+                .type(orderEntity.getType())
+                .createdAt(orderEntity.getCreatedAt())
+                .updatedAt(orderEntity.getUpdatedAt())
+                .status(orderEntity.getStatus())
+                .orderLegResponseDtos(orderLegResponseDtos)
                 .build();
     }
 

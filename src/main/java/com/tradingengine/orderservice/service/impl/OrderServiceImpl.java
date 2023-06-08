@@ -1,10 +1,10 @@
 package com.tradingengine.orderservice.service.impl;
 
 import com.tradingengine.orderservice.dto.OrderRequestToExchange;
+import com.tradingengine.orderservice.dto.OrderResponseDto;
 import com.tradingengine.orderservice.dto.OrderStatusResponseDto;
-import com.tradingengine.orderservice.entity.OrderEntity;
-import com.tradingengine.orderservice.entity.OrderLeg;
-import com.tradingengine.orderservice.entity.PortfolioEntity;
+import com.tradingengine.orderservice.entity.*;
+import com.tradingengine.orderservice.enums.OrderSide;
 import com.tradingengine.orderservice.enums.OrderStatus;
 import com.tradingengine.orderservice.exception.order.OrderModificationFailureException;
 import com.tradingengine.orderservice.exception.order.OrderNotFoundException;
@@ -12,9 +12,13 @@ import com.tradingengine.orderservice.exception.portfolio.PortfolioNotFoundExcep
 import com.tradingengine.orderservice.repository.OrderLegRepository;
 import com.tradingengine.orderservice.repository.OrderRepository;
 import com.tradingengine.orderservice.repository.PortfolioRepository;
+import com.tradingengine.orderservice.repository.WalletRepository;
 import com.tradingengine.orderservice.service.OrderService;
+import com.tradingengine.orderservice.service.StockService;
+import com.tradingengine.orderservice.utils.ModelBuilder;
 import com.tradingengine.orderservice.utils.WebClientService;
 import com.tradingengine.orderservice.utils.strategy.OrderProcessor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,7 +30,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-//@RequiredArgsConstructor
+@RequiredArgsConstructor
 @Slf4j
 
 public class OrderServiceImpl implements OrderService {
@@ -36,15 +40,10 @@ public class OrderServiceImpl implements OrderService {
     private final OrderLegRepository orderLegRepository;
     private final PortfolioRepository portfolioRepository;
     private final OrderProcessor orderProcessor;
+    private final ModelBuilder builder;
+    private final WalletRepository walletRepository;
+    private final StockService stockService;
 
-    @Autowired
-    public OrderServiceImpl(OrderRepository orderRepository, WebClientService webClientService, OrderLegRepository orderLegRepository, PortfolioRepository portfolioRepository, OrderProcessor orderProcessor) {
-        this.orderRepository = orderRepository;
-        this.webClientService = webClientService;
-        this.orderLegRepository = orderLegRepository;
-        this.portfolioRepository = portfolioRepository;
-        this.orderProcessor = orderProcessor;
-    }
 
     @Override
     public OrderEntity saveOrderEntity(OrderEntity order) {
@@ -52,41 +51,22 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public String processAndPlaceOrder(UUID portfolioId, OrderRequestToExchange orderRequestToExchange) throws PortfolioNotFoundException, IOException {
+    public void processAndPlaceOrder(UUID portfolioId, OrderRequestToExchange orderRequestToExchange) throws PortfolioNotFoundException, IOException {
         Optional<PortfolioEntity> portfolio = portfolioRepository.findByPortfolioId(portfolioId);
         if (portfolio.isEmpty()) {
             System.out.println("No portfolio with such id");
             throw new PortfolioNotFoundException(portfolioId);
         }
-        return orderProcessor.processOrder(orderRequestToExchange, portfolioId, portfolio.get().getUserId());
+        orderProcessor.processOrder(orderRequestToExchange, portfolioId, portfolio.get().getUserId());
 
     }
 
-    @Override
-    public OrderStatusResponseDto checkOrderStatus(UUID orderId) throws OrderNotFoundException {
-        Optional<OrderEntity> order = orderRepository.findById(orderId);
-        if (order.isEmpty()) {
-            throw new OrderNotFoundException(orderId);
-        }
-        String exchangeUrl = order.get().getExchangeUrl();
-        return webClientService.checkOrderStatus(orderId.toString(), exchangeUrl);
-    }
 
-    public OrderStatusResponseDto checkOrderLegStatus(UUID orderId) throws OrderNotFoundException {
-        Optional<OrderLeg> orderLeg = orderLegRepository.findById(orderId);
-
-        if (orderLeg.isEmpty()) {
-            throw new OrderNotFoundException(orderId);
-        }
-        String exchangeUrl = orderLeg.get().getExchangeUrl();
-
-        return webClientService.checkOrderStatus(orderId.toString(), exchangeUrl);
-    }
-
-    public OrderEntity fetchOrderById(UUID orderId) throws OrderNotFoundException {
+    public OrderResponseDto fetchOrderById(UUID orderId) {
         // just trying to reduce the checks
-        return orderRepository.findById(orderId)
+        OrderEntity orderEntity = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
+        return builder.buildOrderResponse(orderEntity);
     }
 
     public List<OrderEntity> fetchAllOrders() {
@@ -102,6 +82,7 @@ public class OrderServiceImpl implements OrderService {
         return orderLegRepository.findAll().stream().filter(orderLeg -> orderLeg.getOrderLegStatus().equals(OrderStatus.OPEN)).toList();
     }
 
+    //todo: fetch all of our open orders? why?
     public List<OrderEntity> fetchAllOpenOrders() {
         return orderRepository.findAll().stream().filter(order -> order.getStatus().equals(OrderStatus.OPEN)).toList();
     }
@@ -119,23 +100,58 @@ public class OrderServiceImpl implements OrderService {
             return false;
         }
 
-        Boolean result = webClientService.cancelOrder(orderId, exchangeUrl);
+        List<OrderLeg> orderLegsOwnedByOrderEntity = order.get().getOrderLegsOwnedByEntity();
 
-        if (result) {
-            order.get().setStatus(OrderStatus.CANCELLED);
-            order.get().setUpdatedAt(LocalDateTime.now());
-            orderRepository.save(order.get());
+        for (OrderLeg orderLeg : orderLegsOwnedByOrderEntity) {
 
-            List<OrderLeg> orderLegsOwnedByOrderEntity = order.get().getOrderLegsOwnedByEntity();
+            if(!orderLeg.getOrderLegStatus().equals(OrderStatus.FILLED)) {
+                Boolean result = webClientService.cancelOrder(orderLeg.getIdFromExchange(), orderLeg.getExchangeUrl());
 
-            for (OrderLeg orderLeg : orderLegsOwnedByOrderEntity) {
-                if (!orderLeg.getOrderLegStatus().equals(OrderStatus.FILLED)) {
+                if (result) {
                     orderLeg.setOrderLegStatus(OrderStatus.CANCELLED);
+                    orderLegRepository.save(orderLeg);
+
+                    order.get().setUpdatedAt(LocalDateTime.now());
+                    orderRepository.save(order.get());
                 }
             }
+            updateAccountAfterCancellation(order.get(), orderLeg);
         }
-        return result;
+        return true;
     }
+
+
+    public void updateAccountAfterCancellation(OrderEntity order, OrderLeg orderLeg) {
+
+
+        Optional<Wallet> checkWallet = walletRepository.findByUserId(order.getUserId());
+        StockEntity stock = stockService.findByPortfolioAndTickerAndUserId(order.getPortfolio(), order.getProduct(), order.getUserId());
+
+        if (checkWallet.isPresent()) {
+            Wallet wallet = checkWallet.get();
+
+            if (order.getOrderSide().equals(OrderSide.BUY)) {
+                log.info("refunding cash money");
+                wallet.setAmount(wallet.getAmount() + (order.getPrice() * orderLeg.getQuantity()));
+
+                log.info("taking stocks back");
+                stock.setQuantity(stock.getQuantity() - order.getQuantity());
+
+            } else {
+                log.info("getting cash money");
+                wallet.setAmount(wallet.getAmount() - (order.getPrice() * orderLeg.getQuantity()));
+
+                log.info("giving stocks back");
+                stock.setQuantity(stock.getQuantity() + order.getQuantity());
+            }
+            walletRepository.save(wallet);
+            stockService.saveStock(stock);
+        }
+    }
+
+
+
+
 
     public Boolean modifyOrder(UUID orderId, OrderRequestToExchange orderRequestToExchange, String exchangeUrl) throws OrderNotFoundException, OrderModificationFailureException {
 
